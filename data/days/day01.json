@@ -1,0 +1,24 @@
+{
+  "day": 1,
+  "phase": 1,
+  "title": "第 1 天：认识考试 + 第一批 25 个学术词",
+  "coachNote": "第一天的目标不是做得快，而是把流程跑通：先花 25 分钟看题型指南，知道 PTE 考什么、怎么算分；然后通过两篇文章学 25 个词，这些词的例句会直接成为今天听写和跟读的素材。今天还没有到期的复习词，所以复习时间用来读题型指南。做完后点首页底部的“生成今日汇报”，复制发给我。",
+  "newWords": [0, 25],
+  "articles": "d01",
+  "tasks": [
+    { "mins": 25, "mod": "guide", "title": "读题型指南（口语 + 写作部分）", "detail": "重点看 ★ 标记的高权重题型：RA、RS、DI、RL、WE。只需知道每题怎么做、怎么算分", "link": "guide.html" },
+    { "mins": 45, "mod": "read", "title": "阅读学词：2 篇文章", "detail": "先通读，遇到黄色标记的生词点开听发音、看例句（其它不认识的词也可以点）；读完做理解题和填空题", "link": "read.html" },
+    { "mins": 15, "mod": "review", "title": "今日新词默写一遍", "detail": "听发音、看中文，拼写出来。今天只是第一遍，错了没关系", "link": "review.html?mode=new" },
+    { "mins": 40, "mod": "speak", "title": "RA 4 段 + RS 15 句", "detail": "RA：35 秒准备、40 秒朗读，追求流畅不停顿，读错不要回读。RS：听完一句立刻复述，记住意群而不是单个词", "link": "drill.html#rs" },
+    { "mins": 10, "mod": "break", "title": "休息", "detail": "离开屏幕，喝水走动" },
+    { "mins": 40, "mod": "listen", "title": "WFD 听写 25 句", "detail": "每句只播一次（练习时允许重听一次），写下所有能记住的词，注意复数和 -ed 结尾", "link": "drill.html#wfd" },
+    { "mins": 25, "mod": "reading", "title": "读题型指南（阅读 + 听力部分）", "detail": "重点看 R&W 填空、排序、WFD、HIW、SST 的做法", "link": "guide.html#reading" },
+    { "mins": 30, "mod": "write", "title": "写作：SWT 1 篇 + WE 1 篇", "detail": "SWT（10 分钟）：用一句话概括文章 A。WE（20 分钟）：题目见写作页面，尽量用上今天的 3–5 个新词", "link": "drill.html#write" },
+    { "mins": 10, "mod": "wrap", "title": "生成汇报并发给教练", "detail": "首页底部填写自评后，复制汇报发给我", "link": "index.html#report" }
+  ],
+  "drills": { "wfd": 25, "rs": 15, "ra": 4 },
+  "writing": {
+    "swt": { "title": "SWT：概括文章 A《Why Cities Run Out of Water》", "prompt": "Read the passage “Why Cities Run Out of Water” (阅读学词页面第一篇) and summarise it in ONE sentence of 5–75 words.", "mins": 10 },
+    "we": { "title": "WE：水价问题", "prompt": "Some people believe that governments should make water more expensive so that people use less of it. Others argue that water is a basic human right and should be cheap for everyone. Discuss both views and give your own opinion. (200–300 words)", "mins": 20 }
+  }
+}

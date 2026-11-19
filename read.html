@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>阅读学词</title>
+<link rel="stylesheet" href="assets/style.css?v=1">
+</head>
+<body>
+<main>
+  <h1>阅读学词</h1>
+  <p class="small mute">步骤：① 通读全文，<span class="tw">黄色</span>是今天的新词，点开可以看释义、听发音、听例句、跟读；其它不认识的词也能点。② 读完后先做理解题，再做填空题（只给首字母和中文提示）。③ 做完后，新词会自动进入间隔复习队列。</p>
+  <div id="arts"></div>
+  <h2>今日新词一览</h2>
+  <div class="card row" id="chips"></div>
+</main>
+<script src="assets/core.js?v=1"></script>
+<script src="assets/lookup.js?v=1"></script>
+<script>
+PTE.nav('read.html');
+PTE.track('read');
+const mark = (s) => s.replace(/\{\{([^}|]+)(?:\|([^}]+))?\}\}/g, (_, shown, lemma) => `<span class="tw" data-lemma="${PTE.esc(lemma || shown)}">${PTE.esc(shown)}</span>`);
+const plain = (s) => s.replace(/\{\{([^}|]+)(?:\|[^}]+)?\}\}/g, '$1');
+(async () => {
+  const day = await PTE.currentDay();
+  const [arts, wmap] = await Promise.all([PTE.load('data/articles/' + day.articles + '.json'), PTE.words()]);
+  const box = document.getElementById('arts');
+  arts.forEach((a, ai) => {
+    const prog = PTE.get('art:' + a.id, {});
+    const el = document.createElement('section');
+    el.className = 'card';
+    el.innerHTML = `<div class="row"><h2 class="grow" style="margin:0">${ai + 1}. ${PTE.esc(a.title)}</h2><span class="pill">${PTE.esc(a.topic)}</span></div>
+      <div class="row small" style="margin:8px 0"><button class="icon" data-act="play">🔊 朗读全文</button><button class="icon" data-act="stop">⏹</button><span class="mute">听一遍示范，可以当作 RA 的跟读素材</span></div>
+      <div class="article">${a.paras.map(p => '<p>' + mark(p) + '</p>').join('')}</div>
+      <button class="primary" data-act="done">${prog.read ? '已读完 ✓ 再做一次题' : '读完了，开始答题'}</button>
+      <div class="quiz hidden"></div>`;
+    box.appendChild(el);
+    PTE.clickable(el.querySelector('.article'));
+    el.querySelector('[data-act=play]').onclick = () => PTE.speak(a.paras.map(plain).join(' '), { rate: 0.95 });
+    el.querySelector('[data-act=stop]').onclick = () => speechSynthesis.cancel();
+    el.querySelector('[data-act=done]').onclick = (ev) => {
+      ev.target.classList.add('hidden');
+      a.paras.forEach(p => p.replace(/\{\{([^}|]+)(?:\|([^}]+))?\}\}/g, (_, s, l) => PTE.learn(l || s)));
+      PTE.set('art:' + a.id, { read: true });
+      quiz(el.querySelector('.quiz'), a);
+    };
+  });
+
+  function quiz(q, a) {
+    q.classList.remove('hidden');
+    q.innerHTML = '<h3>理解题</h3>' + a.questions.map((x, i) => `<div class="mcq" data-i="${i}" style="margin-bottom:12px"><div><b>${i + 1}.</b> ${PTE.esc(x.q)}</div>${x.options.map((o, j) => `<label style="display:block;padding:4px 0"><input type="radio" name="${a.id}q${i}" value="${j}"> ${PTE.esc(o)}</label>`).join('')}<div class="fb small"></div></div>`).join('') + '<button class="primary" data-act="mcq">提交理解题</button><div class="cloze"></div>';
+    q.querySelector('[data-act=mcq]').onclick = (ev) => {
+      let ok = 0, bad = 0;
+      q.querySelectorAll('.mcq').forEach(d => {
+        const x = a.questions[+d.dataset.i]; const v = d.querySelector('input:checked');
+        const right = v && +v.value === x.a; right ? ok++ : bad++;
+        d.querySelector('.fb').innerHTML = (right ? '<span class="ok">✓ 正确</span>' : `<span class="bad">✗ 答案：${PTE.esc(x.options[x.a])}</span>`) + `<div class="mute">${PTE.esc(x.why)}</div>`;
+      });
+      PTE.updateStats(s => { s.mcq.ok += ok; s.mcq.bad += bad; });
+      ev.target.remove();
+      cloze(q.querySelector('.cloze'), a);
+    };
+  }
+
+  function cloze(c, a) {
+    const items = [];
+    a.paras.forEach(p => p.split(/(?<=[.!?])\s+(?=[A-Z])/).forEach(sent => {
+      const re = /\{\{([^}|]+)(?:\|([^}]+))?\}\}/g; let m; const found = [];
+      while ((m = re.exec(sent))) found.push({ shown: m[1], lemma: m[2] || m[1] });
+      found.forEach(f => items.push({ sent, ...f }));
+    }));
+    c.innerHTML = '<h3>填空题（拼写要完全正确，含词形变化）</h3>' + items.map((it, i) => {
+      const w = wmap[it.lemma.toLowerCase()];
+      const hint = w ? w.t.split('；')[0] : '';
+      let used = false;
+      const html = it.sent.replace(/\{\{([^}|]+)(?:\|([^}]+))?\}\}/g, (_, s, l) => {
+        if (!used && s === it.shown) { used = true; return `${PTE.esc(s[0])}<input class="blank" data-i="${i}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="填空">`; }
+        return PTE.esc(s);
+      });
+      return `<p style="margin:0 0 10px">${i + 1}. ${html} <span class="small mute">（${PTE.esc(hint)}）</span><span class="small ans" data-i="${i}"></span></p>`;
+    }).join('') + '<button class="primary" data-act="check">检查</button>';
+    c.querySelector('[data-act=check]').onclick = (ev) => {
+      let ok = 0, bad = 0; const wrong = [];
+      items.forEach((it, i) => {
+        const inp = c.querySelector(`input[data-i="${i}"]`);
+        const val = (it.shown[0] + inp.value.trim()).toLowerCase();
+        const right = val === it.shown.toLowerCase();
+        inp.classList.toggle('r', right); inp.classList.toggle('wr', !right); inp.disabled = true;
+        right ? ok++ : (bad++, wrong.push(it.lemma));
+        c.querySelector(`.ans[data-i="${i}"]`).innerHTML = right ? ' <span class="ok">✓</span>' : ` <span class="bad">→ ${PTE.esc(it.shown)}</span>`;
+      });
+      PTE.updateStats(s => { s.cloze.ok += ok; s.cloze.bad += bad; wrong.forEach(w => { if (!s.cloze.wrong.includes(w)) s.cloze.wrong.push(w); }); });
+      ev.target.outerHTML = `<p><b>${ok}/${ok + bad}</b> 正确。${bad ? '错的词今晚和明天都会出现在复习里。' : '全对！'}</p>`;
+    };
+  }
+
+  const [s0, s1] = day.newWords;
+  document.getElementById('chips').innerHTML = PTE._wlist.slice(s0, s1).map(w => `<button class="icon" data-w="${PTE.esc(w.w)}">${PTE.esc(w.w)}</button>`).join('');
+  document.querySelectorAll('#chips [data-w]').forEach(b => b.onclick = () => PTE.lookup(b.dataset.w));
+})().catch(e => document.querySelector('main').insertAdjacentHTML('afterbegin', `<p class="bad">加载失败：${PTE.esc(e.message)}</p>`));
+</script>
+</body>
+</html>

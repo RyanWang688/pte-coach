@@ -1,0 +1,34 @@
+[
+  {
+    "id": "d01a",
+    "title": "Why Cities Run Out of Water",
+    "topic": "环境 / 城市",
+    "paras": [
+      "For most of the twentieth century, city planners {{assumed|assume}} that fresh water would always be {{available}} when people turned on the tap. That assumption is now being questioned. When researchers {{analysed|analyse}} {{data}} from more than two hundred large cities, they {{estimated|estimate}} that one in four already faces regular water shortages.",
+      "It is {{evident}} that climate is only one {{factor}}. Population growth, ageing pipes and poor planning also play a part. In many places, water is not {{distributed|distribute}} fairly: wealthy suburbs receive a steady supply, while poorer districts depend on trucks and wells.",
+      "Local {{authorities|authority}} have tried several {{approaches|approach}}. Some have built desalination plants, which turn sea water into drinking water but use large amounts of energy. Others have invested in recycling waste water for farms and factories. Cape Town, for example, cut its consumption by almost half during a severe drought by limiting each household to fifty litres a day.",
+      "Experts argue that cities must {{assess}} the true cost of each option, including its impact on the {{environment}}. A plant that supplies water cheaply today may damage marine life for decades. The greatest {{benefit}}, many suggest, comes from simple measures: fixing leaks, charging fair prices and teaching people to value every drop."
+    ],
+    "questions": [
+      { "q": "What did researchers find after studying data from over two hundred cities?", "options": ["Most cities have enough water for the future", "About a quarter of cities already experience regular shortages", "Climate is the only cause of water shortages", "Desalination is the cheapest solution"], "a": 1, "why": "第一段：they estimated that one in four already faces regular water shortages（one in four = 四分之一）" },
+      { "q": "According to the passage, what is a disadvantage of desalination plants?", "options": ["They cannot produce drinking water", "They are only useful for farms", "They consume a lot of energy and may harm marine life", "They make water distribution unfair"], "a": 2, "why": "第三段 use large amounts of energy，第四段 may damage marine life。这种需要综合两处信息的题在 PTE 单选题里很常见" },
+      { "q": "What is the main idea of the final paragraph?", "options": ["Simple, low-cost measures may bring the greatest benefit", "Cities should build more desalination plants", "Water should be free for everyone", "Cape Town's policy failed"], "a": 0, "why": "最后一句：The greatest benefit … comes from simple measures" }
+    ]
+  },
+  {
+    "id": "d01b",
+    "title": "The Price of a Cup of Coffee",
+    "topic": "经济 / 贸易",
+    "paras": [
+      "A cup of coffee may seem simple, but the {{concept}} of its price is surprisingly complex. The final cost {{consists|consist}} of many parts: the beans, transport, roasting, rent, wages and tax. Growers, who do most of the hard work, often receive less than ten percent of what the customer pays.",
+      "To understand why, we need some historical {{context}}. Coffee was first grown as an {{export}} crop in colonies, where the {{economy}} was designed to send raw materials to Europe. Many producing countries still {{derive}} a large share of their national income from coffee, yet they have little control over its price, which is set on international markets.",
+      "Because prices change so much, farmers struggle to plan ahead or obtain {{finance}}. Some have formed cooperatives and signed long-term {{contracts|contract}} with buyers. Fair trade organisations have {{established|establish}} a minimum price that protects growers when the market falls.",
+      "However, there is no simple {{formula}} for fairness. Critics point out that it is hard to {{define}} a fair price, and that certification fees can be expensive for small farms. Still, these schemes {{constitute}} an important step. They remind consumers that every cup connects them to a long chain of people, and that the choices they make at the counter can shape lives on the other side of the world."
+    ],
+    "questions": [
+      { "q": "Why do coffee-producing countries have little control over coffee prices?", "options": ["Because they do not export coffee", "Because prices are set on international markets", "Because fair trade organisations fix the price", "Because consumers refuse to pay more"], "a": 1, "why": "第二段：its price, which is set on international markets" },
+      { "q": "What does the fair trade minimum price do?", "options": ["It guarantees growers receive most of the final price", "It removes certification fees", "It protects growers when market prices fall", "It increases the price of coffee for consumers"], "a": 2, "why": "第三段：a minimum price that protects growers when the market falls" },
+      { "q": "Which statement best reflects the writer's attitude to fair trade schemes?", "options": ["They are perfect and should be compulsory", "They are useless because fees are high", "They have limitations but are still a valuable step", "They have made coffee too expensive"], "a": 2, "why": "第四段：先说 However … no simple formula（有局限），再说 Still … an important step（仍然有价值）。PTE 常考作者态度，注意 however / still 这类转折词" }
+    ]
+  }
+]

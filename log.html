@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>教练复盘</title>
+<link rel="stylesheet" href="assets/style.css?v=1">
+</head>
+<body>
+<main>
+  <h1>教练复盘</h1>
+  <p class="small mute">你每天发汇报后，教练会在这里写总结和调整，同时更新第二天的任务。</p>
+  <div id="list"></div>
+</main>
+<script src="assets/core.js?v=1"></script>
+<script>
+PTE.nav('log.html');
+PTE.load('data/log.json').then(list => {
+  document.getElementById('list').innerHTML = list.slice().reverse().map(e => `<div class="card"><div class="row"><b class="grow">${e.day ? 'Day ' + e.day + ' · ' : ''}${PTE.esc(e.title)}</b><span class="small mute">${PTE.esc(e.date)}</span></div>
+    ${['summary:总结', 'scores:数据', 'plan:调整', 'todo:需要你做'].map(x => { const [k, t] = x.split(':'); return e[k] ? `<p><b>${t}：</b>${PTE.esc(e[k])}</p>` : ''; }).join('')}</div>`).join('');
+});
+</script>
+</body>
+</html>

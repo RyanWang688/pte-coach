@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>单词复习</title>
+<link rel="stylesheet" href="assets/style.css?v=1">
+</head>
+<body>
+<main>
+  <h1>单词复习 · 听音默写</h1>
+  <div class="tabs" id="modes"></div>
+  <p class="small mute" id="desc"></p>
+  <div class="card" id="box"></div>
+  <p class="small mute">提示：按 Enter 提交，按 Ctrl（或点 🔊）重听。默写对了的词，下次复习间隔会拉长（1→2→4→7→15→30 天）；错了就回到明天。</p>
+</main>
+<script src="assets/core.js?v=1"></script>
+<script src="assets/lookup.js?v=1"></script>
+<script>
+PTE.nav('review.html');
+PTE.track('review');
+const MODES = { due: '到期复习', new: '今日新词', wrong: '错词本' };
+const mode = new URLSearchParams(location.search).get('mode') || 'due';
+document.getElementById('modes').innerHTML = Object.entries(MODES).map(([k, v]) => `<a class="btn${k === mode ? ' primary' : ''}" href="review.html?mode=${k}">${v}</a>`).join('');
+(async () => {
+  const [day, wmap] = await Promise.all([PTE.currentDay(), PTE.words()]);
+  const custom = PTE.get('custom', {});
+  const srs = PTE.srs();
+  let keys;
+  if (mode === 'new') keys = [...new Set([...PTE._wlist.slice(day.newWords[0], day.newWords[1]).map(w => w.w.toLowerCase()), ...PTE.stats().newWords])];
+  else if (mode === 'wrong') keys = Object.keys(srs).filter(k => srs[k].bad > 0).sort((a, b) => srs[b].bad - srs[a].bad);
+  else keys = PTE.due();
+  keys = keys.filter(k => wmap[k] || custom[k]);
+  if (mode !== 'wrong') keys.sort(() => Math.random() - 0.5);
+  document.getElementById('desc').textContent = { due: `今天到期 ${keys.length} 个。复习完后再学新词。`, new: `今日新词 ${keys.length} 个，第一遍默写只做统计，不改变复习间隔。`, wrong: `错过的词 ${keys.length} 个，按出错次数排序。` }[mode];
+  const box = document.getElementById('box');
+  let i = 0, ok = 0, bad = 0, retry = false;
+  if (!keys.length) { box.innerHTML = '<p>这里暂时没有需要复习的词 🎉</p><a class="btn primary" href="read.html">去阅读学新词</a>'; return; }
+
+  const show = () => {
+    if (i >= keys.length) { box.innerHTML = `<p class="big">完成！</p><p>${ok} 对 / ${bad} 错</p><a class="btn" href="review.html?mode=wrong">看错词本</a> <a class="btn primary" href="index.html">回到今日任务</a>`; return; }
+    const k = keys[i]; const w = wmap[k];
+    const meaning = w ? w.t : custom[k].def;
+    box.innerHTML = `<div class="row"><span class="mute small">${i + 1} / ${keys.length}</span><span class="grow"></span><span class="small mute">${srs[k] ? '第 ' + srs[k].box + ' 格' : '新词'}</span></div>
+      <p style="font-size:1.1rem;margin:12px 0">${PTE.esc(meaning)}</p>
+      <div class="row"><button class="icon" id="say">🔊 单词</button><button class="icon" id="slow">🐢</button></div>
+      <input type="text" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="拼写这个单词" style="margin-top:12px;font-size:1.2rem">
+      <div id="fb" style="margin-top:12px"></div>`;
+    const say = (r) => PTE.speak(w ? w.w : k, { rate: r });
+    document.getElementById('say').onclick = () => say(); document.getElementById('slow').onclick = () => say(0.6);
+    const ans = document.getElementById('ans'); ans.focus(); say();
+    retry = false;
+    ans.onkeydown = (e) => {
+      if (e.key === 'Control') { say(); return; }
+      if (e.key !== 'Enter') return;
+      const target = (w ? w.w : k).toLowerCase();
+      const right = ans.value.trim().toLowerCase() === target;
+      if (retry) { if (right) { i++; show(); } else { ans.value = ''; PTE.toast('再抄一遍：' + target); } return; }
+      if (mode === 'new') PTE.updateStats(s => { if (right) s.review.ok++; else { s.review.bad++; if (!s.review.wrong.includes(k)) s.review.wrong.push(k); } });
+      else PTE.grade(k, right);
+      if (right) { ok++; document.getElementById('fb').innerHTML = '<span class="ok big">✓</span>'; setTimeout(() => { i++; show(); }, 500); }
+      else {
+        bad++; retry = true;
+        document.getElementById('fb').innerHTML = `<div class="bad big">${PTE.esc(w ? w.w : k)}</div><div class="mute">/${PTE.esc(w ? w.p : '')}/</div>` + (w ? `<div style="margin-top:6px">${PTE.esc(w.e)} <button class="icon" id="ex">🔊</button></div><div class="small mute">${PTE.esc(w.c)}</div>` : '') + '<div class="small" style="margin-top:6px">正确拼写一遍后按 Enter 继续</div>';
+        const ex = document.getElementById('ex'); if (ex) ex.onclick = () => PTE.speak(w.e);
+        ans.value = ''; say();
+      }
+    };
+  };
+  show();
+})();
+</script>
+</body>
+</html>

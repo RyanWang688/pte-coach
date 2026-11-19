@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PTE Coach</title>
+<link rel="stylesheet" href="assets/style.css?v=1">
+</head>
+<body>
+<main>
+  <div class="row"><h1 class="grow" id="title">PTE Coach</h1><span class="pill" id="phase"></span></div>
+  <div class="bar" title="60 天进度"><i id="dayBar" style="width:0"></i></div>
+  <p class="small mute" id="dayInfo"></p>
+
+  <div class="note" id="coach"></div>
+
+  <div class="stats" style="margin-top:14px">
+    <div class="stat"><span class="small mute">已学单词</span><b id="sWords">0</b><span class="small mute">/ 1040</span></div>
+    <div class="stat"><span class="small mute">今日到期复习</span><b id="sDue">0</b></div>
+    <div class="stat"><span class="small mute">今日计时</span><b id="sMins">0</b><span class="small mute">分钟 / 240</span></div>
+    <div class="stat"><span class="small mute">今日任务</span><b id="sTasks">0</b></div>
+  </div>
+
+  <h2>今日任务（约 4 小时）</h2>
+  <div class="card" id="tasks"></div>
+
+  <h2>60 天路线</h2>
+  <div class="phases" id="phases"></div>
+
+  <h2 id="report">今日汇报</h2>
+  <div class="card">
+    <p class="small mute">网站会自动统计你今天的练习数据。补充下面几项自评后，点“生成汇报”，把内容复制发给教练（Claude）。</p>
+    <label class="small">实际学习时长（小时，可含网站外的练习）</label>
+    <input type="text" id="fHours" placeholder="例如 3.5">
+    <label class="small">今天最难 / 最卡的地方</label>
+    <input type="text" id="fHard" placeholder="例如 RS 长句记不住后半句；WFD 复数总漏">
+    <label class="small">其它（模考分数、目标分、考试日期、心情等）</label>
+    <textarea id="fOther" style="min-height:70px"></textarea>
+    <div class="row" style="margin-top:10px"><button class="primary" id="gen">生成汇报</button><button id="copy" disabled>复制</button></div>
+    <pre class="report hidden" id="out"></pre>
+  </div>
+
+  <details class="card"><summary>数据备份 / 换设备</summary>
+    <p class="small mute">学习记录只保存在当前浏览器里。换电脑或手机前，先导出，再到新设备上导入。</p>
+    <div class="row"><button id="exp">导出备份</button><label class="btn">导入备份<input type="file" id="imp" accept=".json" hidden></label></div>
+    <p class="small mute" style="margin-top:12px">查看往日任务：<select id="viewDay" style="width:auto"></select></p>
+  </details>
+</main>
+<script src="assets/core.js?v=1"></script>
+<script>
+PTE.nav('index.html');
+PTE.track('dashboard');
+const MOD = { guide: '题型指南', read: '阅读学词', review: '单词复习', speak: '口语', break: '休息', listen: '听力', reading: '阅读题型', write: '写作', wrap: '复盘' };
+(async () => {
+  const [day, plan, wmap] = await Promise.all([PTE.currentDay(), PTE.load('data/plan.json'), PTE.words()]);
+  const doneKey = 'done:' + day.day;
+  let done = PTE.get(doneKey, []);
+  document.getElementById('title').textContent = day.title;
+  const ph = plan.phases.find(p => p.n === day.phase);
+  document.getElementById('phase').textContent = '阶段 ' + ph.n + ' · ' + ph.name;
+  document.getElementById('dayBar').style.width = (day.day / plan.totalDays * 100) + '%';
+  document.getElementById('dayInfo').textContent = `Day ${day.day} / ${plan.totalDays}` + (day.day !== day.latest ? `（正在查看往日，最新为 Day ${day.latest}）` : '');
+  document.getElementById('coach').innerHTML = '<b>教练寄语：</b>' + PTE.esc(day.coachNote);
+
+  const srs = PTE.srs();
+  document.getElementById('sWords').textContent = Object.keys(srs).length;
+  document.getElementById('sDue').textContent = PTE.due().length;
+  const st = PTE.stats();
+  const mins = Object.values(st.mins).reduce((a, b) => a + b, 0);
+  document.getElementById('sMins').textContent = Math.round(mins);
+
+  let t = 0;
+  const renderTasks = () => {
+    t = 0;
+    document.getElementById('tasks').innerHTML = day.tasks.map((k, i) => {
+      const start = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; t += k.mins;
+      const on = done.includes(i);
+      return `<div class="task${on ? ' done' : ''}"><input type="checkbox" data-i="${i}" ${on ? 'checked' : ''} aria-label="完成"><div class="t">${start}<br>${k.mins}′</div><div class="grow"><div class="ttl"><b>${PTE.esc(k.title)}</b> <span class="pill">${MOD[k.mod] || k.mod}</span></div><div class="small mute">${PTE.esc(k.detail || '')}</div>${k.link ? `<a class="small" href="${k.link}">开始 →</a>` : ''}</div></div>`;
+    }).join('');
+    document.getElementById('sTasks').textContent = done.length + ' / ' + day.tasks.length;
+    document.querySelectorAll('#tasks input').forEach(c => c.onchange = () => {
+      const i = +c.dataset.i; done = c.checked ? [...new Set([...done, i])] : done.filter(x => x !== i); PTE.set(doneKey, done); renderTasks();
+    });
+  };
+  renderTasks();
+
+  document.getElementById('phases').innerHTML = plan.phases.map(p => `<div class="phase${p.n === day.phase ? ' on' : ''}"><b>${p.name}</b><div class="mute">Day ${p.days[0]}–${p.days[1]}</div><div>${PTE.esc(p.goal)}</div></div>`).join('');
+
+  // report
+  const avg = (arr) => arr.length ? Math.round(arr.reduce((a, x) => a + x.score / x.total, 0) / arr.length * 100) : null;
+  document.getElementById('gen').onclick = () => {
+    const s = PTE.stats();
+    const m = s.mins, tot = Math.round(Object.values(m).reduce((a, b) => a + b, 0));
+    const notDone = day.tasks.map((k, i) => done.includes(i) ? null : k.title).filter(Boolean);
+    const low = (arr) => arr.slice().sort((a, b) => a.score / a.total - b.score / b.total).slice(0, 3).map(x => `「${x.text}」→「${x.answer || '(空)'}」${x.score}/${x.total}`).join('\n    ');
+    const L = [];
+    L.push(`【PTE 日报】Day ${day.day} · ${PTE.today()}`);
+    L.push(`任务完成：${done.length}/${day.tasks.length}` + (notDone.length ? `（未完成：${notDone.join('、')}）` : ''));
+    L.push(`网站计时：${tot} 分钟（${Object.entries(m).map(([k, v]) => `${k} ${Math.round(v)}`).join(' / ') || '无'}）；自报时长：${document.getElementById('fHours').value || '未填'} 小时`);
+    L.push(`单词：今日新学 ${s.newWords.length}；默写 ${s.review.ok} 对 / ${s.review.bad} 错；已学累计 ${Object.keys(PTE.srs()).length}；明日到期约 ${Object.values(PTE.srs()).filter(x => x.due <= PTE.addDays(PTE.today(), 1)).length}`);
+    if (s.review.wrong.length) L.push(`  默写错词：${s.review.wrong.join(', ')}`);
+    L.push(`阅读：理解题 ${s.mcq.ok}/${s.mcq.ok + s.mcq.bad}；填空 ${s.cloze.ok}/${s.cloze.ok + s.cloze.bad}` + (s.cloze.wrong.length ? `；填空错：${s.cloze.wrong.join(', ')}` : ''));
+    L.push(`WFD：${s.wfd.length} 句` + (s.wfd.length ? `，平均 ${avg(s.wfd)}%\n  最弱：\n    ${low(s.wfd)}` : ''));
+    L.push(`RS：${s.rs.length} 句` + (s.rs.length ? `，平均识别 ${avg(s.rs)}%\n  最弱：\n    ${low(s.rs)}` : ''));
+    L.push(`RA：${s.ra.length} 段` + (s.ra.length ? `，平均识别 ${avg(s.ra)}%` : ''));
+    s.writing.forEach(w => L.push(`写作 ${w.type}（${w.words} 词，用时 ${w.mins} 分钟）：\n${w.text}`));
+    L.push(`最难：${document.getElementById('fHard').value || '未填'}`);
+    const o = document.getElementById('fOther').value; if (o) L.push(`其它：${o}`);
+    const out = document.getElementById('out'); out.textContent = L.join('\n'); out.classList.remove('hidden');
+    document.getElementById('copy').disabled = false;
+  };
+  document.getElementById('copy').onclick = async () => {
+    const txt = document.getElementById('out').textContent;
+    try { await navigator.clipboard.writeText(txt); PTE.toast('已复制，发给教练吧'); } catch (e) { const r = document.createRange(); r.selectNode(document.getElementById('out')); getSelection().removeAllRanges(); getSelection().addRange(r); PTE.toast('请手动复制选中的内容'); }
+  };
+
+  // backup
+  document.getElementById('exp').onclick = () => {
+    const dump = {}; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith('pte:')) dump[k] = localStorage.getItem(k); }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(dump)], { type: 'application/json' })); a.download = `pte-backup-${PTE.today()}.json`; a.click();
+  };
+  document.getElementById('imp').onchange = async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try { const d = JSON.parse(await f.text()); Object.entries(d).forEach(([k, v]) => { if (k.startsWith('pte:')) localStorage.setItem(k, v); }); PTE.toast('已导入'); setTimeout(() => location.reload(), 800); } catch (err) { PTE.toast('文件格式不对'); }
+  };
+  const idx = await PTE.load('data/days/index.json');
+  const sel = document.getElementById('viewDay');
+  sel.innerHTML = idx.days.map(n => `<option value="${n}" ${n === day.day ? 'selected' : ''}>Day ${n}${n === idx.current ? '（最新）' : ''}</option>`).join('');
+  sel.onchange = () => { PTE.set('viewDay', +sel.value === idx.current ? null : +sel.value); location.reload(); };
+})().catch(e => { document.querySelector('main').insertAdjacentHTML('afterbegin', `<p class="bad">加载失败：${PTE.esc(e.message)}</p>`); });
+</script>
+</body>
+</html>

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>题型训练</title>
+<link rel="stylesheet" href="assets/style.css?v=1">
+</head>
+<body>
+<main>
+  <h1>题型训练</h1>
+  <div class="tabs" id="tabs"></div>
+  <div id="pane"></div>
+  <details class="card small"><summary>发音设置</summary>
+    <p class="mute">考试中会听到英、澳、美等多种口音。可以在这里换不同口音练习。</p>
+    <div class="row"><label>口音</label><select id="voice" style="width:auto;max-width:100%"></select></div>
+    <div class="row" style="margin-top:8px"><label>语速</label><input type="range" id="rate" min="0.7" max="1.2" step="0.05" style="width:200px"><span id="rateV"></span></div>
+    <p class="mute" id="srNote"></p>
+  </details>
+</main>
+<script src="assets/core.js?v=1"></script>
+<script src="assets/lookup.js?v=1"></script>
+<script>
+PTE.nav('drill.html');
+const TABS = { wfd: 'WFD 听写', rs: 'RS 复述', ra: 'RA 朗读', write: '写作 SWT/WE' };
+let cur = (location.hash || '#rs').slice(1); if (!TABS[cur]) cur = 'rs';
+const shuffle = (a) => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map(x => x[1]);
+const plain = (s) => s.replace(/\{\{([^}|]+)(?:\|[^}]+)?\}\}/g, '$1');
+const diffHTML = (r) => '<div class="diff" style="font-size:1.1rem">' + r.words.map((w, i) => `<span class="${r.marks[i] ? 'm' : 'x'}">${PTE.esc(w)}</span>`).join(' ') + '</div>';
+let day, wmap, pool, paras;
+
+(async () => {
+  [day, wmap] = await Promise.all([PTE.currentDay(), PTE.words()]);
+  const arts = await PTE.load('data/articles/' + day.articles + '.json');
+  paras = arts.flatMap(a => a.paras.map(p => ({ title: a.title, text: plain(p) })));
+  const today = PTE._wlist.slice(day.newWords[0], day.newWords[1]);
+  const learned = Object.keys(PTE.srs()).map(k => wmap[k]).filter(Boolean).filter(w => !today.includes(w));
+  pool = [...shuffle(today), ...shuffle(learned)].map(w => ({ text: w.e, cn: w.c, word: w.w }));
+  // settings
+  const vs = () => { const sel = document.getElementById('voice'); const list = PTE.voices(); const cv = PTE.pickVoice(); sel.innerHTML = list.map(v => `<option ${cv && v.name === cv.name ? 'selected' : ''}>${PTE.esc(v.name)}</option>`).join('') || '<option>（浏览器没有英文语音）</option>'; sel.onchange = () => PTE.set('voice', sel.value); };
+  vs(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', vs);
+  const rate = document.getElementById('rate'); rate.value = PTE.get('rate', 0.95); document.getElementById('rateV').textContent = rate.value;
+  rate.oninput = () => { PTE.set('rate', +rate.value); document.getElementById('rateV').textContent = rate.value; };
+  document.getElementById('srNote').textContent = PTE.canRecognize ? '语音识别可用（录音由浏览器发送到识别服务转成文字，网站本身不保存录音）。识别结果只能粗略反映内容和清晰度，不等于 PTE 官方评分。' : '当前浏览器不支持语音识别：RS / RA 改为听完后自己对照原文打分。建议用电脑上的 Chrome 或 Edge。';
+  render();
+})();
+
+function tabs() {
+  document.getElementById('tabs').innerHTML = Object.entries(TABS).map(([k, v]) => `<button data-t="${k}" class="${k === cur ? 'on' : ''}">${v}</button>`).join('');
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { cur = b.dataset.t; history.replaceState(null, '', '#' + cur); speechSynthesis.cancel(); PTE._stopListen && PTE._stopListen(); render(); });
+}
+PTE.track(() => cur);
+function render() { tabs();({ wfd, rs, ra, write })[cur](document.getElementById('pane')); }
+const counter = (key, goal) => `<span class="pill">今日 ${PTE.stats()[key].length} / ${goal}</span>`;
+
+/* ---------- WFD ---------- */
+function wfd(el) {
+  let i = PTE.stats().wfd.length % Math.max(pool.length, 1), plays = 0;
+  const show = () => {
+    const it = pool[i % pool.length]; plays = 0;
+    el.innerHTML = `<div class="card"><div class="row"><b class="grow">Write from Dictation</b>${counter('wfd', day.drills.wfd)}</div>
+      <p class="small mute">考试中只播一次。练习时允许重听 1 次，但建议前 10 句只听一次。把听到的每个词都写下来，大小写和标点不计分。</p>
+      <div class="row"><button class="primary" id="play">▶ 播放</button><span class="small mute" id="pc"></span></div>
+      <textarea id="ans" style="min-height:70px;margin-top:10px" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="输入你听到的句子"></textarea>
+      <div class="row" style="margin-top:8px"><button id="sub">提交</button><button id="next" class="hidden primary">下一句 →</button></div>
+      <div id="fb" style="margin-top:12px"></div></div>`;
+    const play = () => { if (plays >= 2) return; plays++; document.getElementById('pc').textContent = plays === 1 ? '还能重听 1 次' : '不能再听了'; PTE.speak(it.text); };
+    document.getElementById('play').onclick = play;
+    setTimeout(play, 1200);
+    document.getElementById('sub').onclick = () => {
+      const a = document.getElementById('ans').value; const r = PTE.wordScore(it.text, a);
+      PTE.updateStats(s => s.wfd.push({ text: it.text, answer: a.trim(), score: r.score, total: r.total }));
+      document.getElementById('fb').innerHTML = `<p><b class="${r.score === r.total ? 'ok' : 'bad'}">${r.score} / ${r.total}</b></p>${diffHTML(r)}<p class="small mute">${PTE.esc(it.cn)}</p><button class="icon" id="again">🔊 再听原句</button>`;
+      document.getElementById('again').onclick = () => PTE.speak(it.text);
+      PTE.clickable(document.getElementById('fb').querySelector('.diff'));
+      document.getElementById('sub').classList.add('hidden'); document.getElementById('next').classList.remove('hidden');
+      document.getElementById('next').focus();
+    };
+    document.getElementById('next').onclick = () => { i++; show(); };
+    document.getElementById('ans').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('sub').click(); } };
+  };
+  show();
+}
+
+/* ---------- RS ---------- */
+function rs(el) {
+  let i = (PTE.stats().rs.length + 7) % Math.max(pool.length, 1);
+  const show = () => {
+    const it = pool[i % pool.length];
+    el.innerHTML = `<div class="card"><div class="row"><b class="grow">Repeat Sentence</b>${counter('rs', day.drills.rs)}</div>
+      <p class="small mute">听完立刻复述（考试中有 15 秒作答时间，开头 3 秒内不出声麦克风就会关闭）。按意群记忆，宁可流畅地漏词，也不要卡顿回读。</p>
+      <div class="row"><button class="primary" id="go">▶ 开始</button><span id="st" class="small mute"></span></div>
+      <div id="live" class="mute" style="margin-top:10px;min-height:1.6em"></div><div id="fb"></div></div>`;
+    document.getElementById('go').onclick = async (ev) => {
+      ev.target.disabled = true;
+      const st = document.getElementById('st');
+      st.textContent = '听…'; await PTE.speak(it.text);
+      if (PTE.canRecognize) {
+        st.innerHTML = '<b class="bad">● 录音中，开始复述</b>（说完停顿 2 秒自动结束）';
+        const said = await PTE.listen(15000, t => document.getElementById('live').textContent = t);
+        st.textContent = '';
+        finish(it, said || '');
+      } else {
+        st.textContent = '现在复述，说完后点击“对照原文”';
+        document.getElementById('fb').innerHTML = '<button id="rev">对照原文</button>';
+        document.getElementById('rev').onclick = () => {
+          document.getElementById('fb').innerHTML = `<p style="font-size:1.1rem">${PTE.esc(it.text)}</p><p class="small mute">${PTE.esc(it.cn)}</p><p>自评：</p><div class="row">${[[1, '全部'], [0.75, '大部分'], [0.5, '一半'], [0.2, '很少']].map(([v, t]) => `<button data-v="${v}">${t}</button>`).join('')}</div>`;
+          document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { const tot = PTE.tokens(it.text).length; PTE.updateStats(s => s.rs.push({ text: it.text, answer: '(自评)', score: Math.round(+b.dataset.v * tot), total: tot })); i++; show(); });
+        };
+      }
+    };
+  };
+  const finish = (it, said) => {
+    const r = PTE.wordScore(it.text, said);
+    PTE.updateStats(s => s.rs.push({ text: it.text, answer: said, score: r.score, total: r.total }));
+    document.getElementById('fb').innerHTML = `<p><b>${Math.round(r.score / r.total * 100)}%</b> 的词被识别到</p>${diffHTML(r)}<p class="small mute">${PTE.esc(it.cn)}</p><div class="row"><button class="icon" id="again">🔊 再听</button><button class="primary" id="next">下一句 →</button></div>`;
+    document.getElementById('again').onclick = () => PTE.speak(it.text);
+    document.getElementById('next').onclick = () => { i++; show(); };
+  };
+  show();
+}
+
+/* ---------- RA ---------- */
+function ra(el) {
+  let i = PTE.stats().ra.length % paras.length, timer;
+  const show = () => {
+    clearInterval(timer);
+    const it = paras[i % paras.length];
+    el.innerHTML = `<div class="card"><div class="row"><b class="grow">Read Aloud</b>${counter('ra', day.drills.ra)}</div>
+      <p class="small mute">考试中准备 30–40 秒，朗读最多 40 秒。重点是流利度和发音：按意群停顿，语调自然，读错了不要回头重读。</p>
+      <p class="mute small">来自《${PTE.esc(it.title)}》</p>
+      <div class="article" id="txt">${PTE.esc(it.text)}</div>
+      <div class="row"><span class="timer" id="clock">准备 35</span><button id="skip">跳过准备，开始朗读</button><button class="icon" id="demo">🔊 听示范</button><span class="grow"></span><button id="nextp">换一段 →</button></div>
+      <div id="live" class="mute small" style="margin-top:8px"></div><div id="fb"></div></div>`;
+    let t = 35;
+    const clock = document.getElementById('clock');
+    timer = setInterval(() => { t--; clock.textContent = '准备 ' + t; if (t <= 0) start(); }, 1000);
+    document.getElementById('skip').onclick = start;
+    document.getElementById('demo').onclick = () => PTE.speak(it.text);
+    document.getElementById('nextp').onclick = () => { i++; show(); };
+    let started = false;
+    async function start() {
+      if (started) return; started = true; clearInterval(timer); speechSynthesis.cancel();
+      document.getElementById('skip').disabled = true;
+      let r = 40; clock.innerHTML = '<span class="bad">● 朗读 40</span>';
+      timer = setInterval(() => { r--; clock.innerHTML = `<span class="bad">● 朗读 ${r}</span>`; if (r <= 0) { clearInterval(timer); PTE._stopListen && PTE._stopListen(); } }, 1000);
+      if (!PTE.canRecognize) {
+        document.getElementById('fb').innerHTML = '<p class="small mute">当前浏览器不能识别语音。读完后对照示范，自评流利度：</p><div class="row">' + [[1, '一气呵成'], [0.8, '偶尔卡顿'], [0.5, '多次停顿/回读']].map(([v, t]) => `<button data-v="${v}">${t}</button>`).join('') + '</div>';
+        document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { clearInterval(timer); const tot = PTE.tokens(it.text).length; PTE.updateStats(s => s.ra.push({ text: it.text.slice(0, 40) + '…', answer: '(自评)', score: Math.round(+b.dataset.v * tot), total: tot })); i++; show(); });
+        return;
+      }
+      const said = await PTE.listen(40000, x => document.getElementById('live').textContent = x);
+      clearInterval(timer); clock.textContent = '完成';
+      const res = PTE.wordScore(it.text, said || '');
+      PTE.updateStats(s => s.ra.push({ text: it.text.slice(0, 40) + '…', answer: '', score: res.score, total: res.total }));
+      document.getElementById('txt').outerHTML = diffHTML(res);
+      document.getElementById('fb').innerHTML = `<p><b>${Math.round(res.score / res.total * 100)}%</b> 的词被识别到。标红的词：可能读漏了、吞音了，或者发音不清。点“听示范”对比后再读一遍。</p>`;
+    }
+  };
+  show();
+}
+
+/* ---------- Writing ---------- */
+function write(el) {
+  const W = day.writing;
+  el.innerHTML = Object.entries(W).map(([k, w]) => `<div class="card" data-k="${k}"><div class="row"><b class="grow">${PTE.esc(w.title)}</b><span class="timer" data-clock>${w.mins}:00</span></div>
+    <p>${PTE.esc(w.prompt)}</p>
+    <div class="row"><button class="primary" data-start>开始计时</button><span class="small mute" data-wc>0 词</span><a class="small" href="guide.html#${k === 'swt' ? 'swt' : 'we'}">看模板 →</a></div>
+    <textarea data-txt spellcheck="false" style="min-height:${k === 'we' ? 280 : 110}px;margin-top:8px" placeholder="考试界面没有拼写检查，这里也关闭了"></textarea>
+    <div class="row" style="margin-top:8px"><button data-save>提交（附在今日汇报里给教练批改）</button></div><div data-fb class="small" style="margin-top:8px"></div></div>`).join('');
+  el.querySelectorAll('[data-k]').forEach(card => {
+    const w = W[card.dataset.k]; const ta = card.querySelector('[data-txt]'); let left = w.mins * 60, tm, t0;
+    const wc = () => (ta.value.match(/[A-Za-z0-9'’-]+/g) || []).length;
+    ta.oninput = () => card.querySelector('[data-wc]').textContent = wc() + ' 词';
+    card.querySelector('[data-start]').onclick = (ev) => { ev.target.disabled = true; t0 = Date.now(); ta.focus(); tm = setInterval(() => { left--; card.querySelector('[data-clock]').textContent = `${Math.floor(Math.max(left, 0) / 60)}:${String(Math.max(left, 0) % 60).padStart(2, '0')}`; if (left === 0) PTE.toast('时间到'); }, 1000); };
+    card.querySelector('[data-save]').onclick = () => {
+      clearInterval(tm); const n = wc(); const mins = t0 ? Math.round((Date.now() - t0) / 60000) : 0;
+      const type = card.dataset.k.toUpperCase();
+      PTE.updateStats(s => { s.writing = s.writing.filter(x => x.type !== type); s.writing.push({ type, words: n, mins, text: ta.value.trim() }); });
+      const checks = type === 'SWT'
+        ? [[n >= 5 && n <= 75, `字数 5–75（现在 ${n}）`], [(ta.value.trim().match(/[.!?](\s|$)/g) || []).length === 1, '只有一个句子（只有一个句号）'], [/\b(and|while|which|whereas|although)\b/i.test(ta.value), '用了连接词把要点串起来']]
+        : [[n >= 200 && n <= 300, `字数 200–300（现在 ${n}）`], [(ta.value.match(/\n\s*\n|\n/g) || []).length >= 3, '至少 4 段（开头 / 两段主体 / 结尾）'], [/\b(however|moreover|therefore|for example|in conclusion)\b/i.test(ta.value), '用了连接词（however / for example / in conclusion）']];
+      card.querySelector('[data-fb]').innerHTML = checks.map(([ok, t]) => `<div class="${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✗'} ${t}</div>`).join('') + '<div class="mute">已保存。生成今日汇报时会附上全文，教练会批改。</div>';
+    };
+  });
+}
+</script>
+</body>
+</html>
