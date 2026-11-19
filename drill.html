@@ -6,7 +6,7 @@
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=3">
+<link rel="stylesheet" href="assets/style.css?v=4">
 </head>
 <body>
 <main>
@@ -14,8 +14,9 @@
   <div class="seg" id="tabs"></div>
   <div id="pane"></div>
 </main>
-<script src="assets/core.js?v=3"></script>
-<script src="assets/lookup.js?v=3"></script>
+<script src="assets/core.js?v=4"></script>
+<script src="assets/drag.js?v=4"></script>
+<script src="assets/lookup.js?v=4"></script>
 <script>
 PTE.nav('drill.html');
 const TABS = { rs: ['RS 复述', 'mic'], wfd: ['WFD 听写', 'head'], ra: ['RA 朗读', 'book'], write: ['写作', 'pen'] };
@@ -127,6 +128,7 @@ function rs(el) {
     $('#go').innerHTML = PTE.icon('redo'); $('#go').onclick = () => { show(); };
     $('#fb').innerHTML = scoreBlock(r, `<p class="small mute">${PTE.esc(it.cn)}</p><div class="row" style="justify-content:center"><button class="sm" id="again">${PTE.icon('vol')} 再听</button><button class="pri" id="next">下一句 ${PTE.icon('arrow')}</button></div>`);
     paint(el, r.score / r.total);
+    PTE.clickable($('#fb .diff'));
     $('#again').onclick = () => PTE.speak(it.text);
     $('#next').onclick = () => { i++; show(); };
     goalCheck('rs', day.drills.rs);
@@ -147,8 +149,10 @@ function ra(el) {
       <button class="bigbtn" id="skip" style="margin-top:12px" aria-label="开始朗读">${PTE.icon('mic')}</button><div class="small mute" style="margin-top:6px">准备好了就点，开始朗读</div>
       <div id="live" class="mute small" style="margin-top:8px"></div><div id="fb"></div><div style="margin-top:14px">${tips('ra')}</div></div></div>`;
     wireTips(el);
+    PTE.clickable($('#txt'));
     let t = 35;
-    timer = setInterval(() => { t--; $('#clock').textContent = t; if (t <= 0) start(); }, 1000);
+    clearInterval(PTE._raTimer);
+    timer = PTE._raTimer = setInterval(() => { if (!$('#clock')) return clearInterval(timer); t--; $('#clock').textContent = t; if (t <= 0) start(); }, 1000);
     $('#skip').onclick = start;
     $('#demo').onclick = () => PTE.speak(it.text);
     $('#nextp').onclick = () => { i++; show(); };
@@ -157,7 +161,7 @@ function ra(el) {
       if (started) return; started = true; clearInterval(timer); speechSynthesis.cancel();
       const b = $('#skip'); b.classList.add('rec'); b.disabled = true; b.nextElementSibling.textContent = '';
       let r = 40; $('#clock').textContent = r; $('#phase').innerHTML = '<span class="bad">录音中</span>';
-      timer = setInterval(() => { r--; $('#clock').textContent = Math.max(r, 0); if (r <= 0) { clearInterval(timer); PTE._stopListen && PTE._stopListen(); } }, 1000);
+      timer = PTE._raTimer = setInterval(() => { if (!$('#clock')) return clearInterval(timer); r--; $('#clock').textContent = Math.max(r, 0); if (r <= 0) { clearInterval(timer); PTE._stopListen && PTE._stopListen(); } }, 1000);
       if (!PTE.canRecognize) {
         $('#fb').innerHTML = `<p class="small">读完了吗？给自己的流利度打个分：</p><div class="choice" style="justify-content:center">${[[1, '一气呵成'], [0.8, '偶尔卡顿'], [0.5, '多次停顿']].map(([v, t]) => `<button data-v="${v}">${t}</button>`).join('')}</div>`;
         document.querySelectorAll('[data-v]').forEach(x => x.onclick = () => { clearInterval(timer); const tot = PTE.tokens(it.text).length; PTE.updateStats(s => s.ra.push({ text: it.text.slice(0, 40) + '…', answer: '(自评)', score: Math.round(+x.dataset.v * tot), total: tot })); goalCheck('ra', day.drills.ra); i++; show(); });

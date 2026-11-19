@@ -33,7 +33,7 @@
       if (r.score === r.total) PTE.confetti();
     });
     const add = root.querySelector('[data-add]');
-    if (add) add.onclick = () => { PTE.learn(add.dataset.add); add.innerHTML = ic('check') + ' 已加入复习'; add.disabled = true; };
+    if (add) add.onclick = async () => { add.disabled = true; await PTE.collect(add.dataset.add, 'lookup'); add.innerHTML = ic('check') + ' 已在生词本'; };
   }
 
   PTE.lookup = async (raw) => {
@@ -47,7 +47,7 @@
     const hit = await PTE.lemma(raw);
     if (me !== pop) return;
     if (hit) {
-      const inSrs = PTE.srs()[hit.w.toLowerCase()];
+      const inSrs = (PTE.srs()[hit.w.toLowerCase()] || {}).star;
       pop.innerHTML = `<button class="x" aria-label="关闭">${ic('x')}</button>
         <span class="chip" style="background:${hit.s === 'A' ? '#EFEAFF' : '#E2F4FF'};color:${hit.s === 'A' ? '#6C5CFF' : '#1C7FD1'}">${hit.s === 'A' ? '学术词 AWL' : 'PTE 话题词'} #${hit.i + 1}</span>
         <div class="row" style="margin-top:6px"><span class="hw">${PTE.esc(hit.w)}</span><span class="mute">/${PTE.esc(hit.p)}/</span></div>
@@ -56,7 +56,7 @@
         <div class="ex"><div style="font-weight:600">${PTE.esc(hit.e)}</div><div class="mute small">${PTE.esc(hit.c)}</div>
           <div class="row" style="margin-top:10px"><button class="sm" data-say="${PTE.esc(hit.e)}">${ic('vol')} 例句</button><button class="sm" data-say="${PTE.esc(hit.e)}" data-rate="0.7">${ic('slow')}</button>${shadowBtn(hit.e)}</div>
           <div class="shadow-out"></div></div>
-        <div class="row"><button class="sm" data-add="${PTE.esc(hit.w)}" ${inSrs ? 'disabled' : ''}>${inSrs ? ic('check') + ' 已在复习队列' : ic('plus') + ' 加入复习'}</button>
+        <div class="row"><button class="sm" data-add="${PTE.esc(hit.w)}" ${inSrs ? 'disabled' : ''}>${inSrs ? ic('check') + ' 已在生词本' : ic('plus') + ' 加入生词本'}</button>
         <a class="btn sm ghost" target="_blank" rel="noopener" href="https://www.youdao.com/result?word=${encodeURIComponent(hit.w)}&lang=en">有道详解 ${ic('ext')}</a></div>`;
       wire(pop); PTE.speak(hit.w); return;
     }
@@ -84,13 +84,13 @@
     } else {
       html += `</div><div class="row" style="margin:6px 0"><button class="sm" data-say="${PTE.esc(word)}">${ic('vol')} 发音</button></div><p class="mute small">词典里没查到，可能是专有名词或变形。</p>`;
     }
-    html += `<div class="row" style="margin-top:12px"><button class="sm" data-addc="1">${ic('plus')} 加入我的生词</button><a class="btn sm ghost" target="_blank" rel="noopener" href="https://www.youdao.com/result?word=${encodeURIComponent(word)}&lang=en">中文释义 ${ic('ext')}</a></div>`;
+    html += `<div class="row" style="margin-top:12px"><button class="sm" data-addc="1">${ic('plus')} 加入生词本</button><a class="btn sm ghost" target="_blank" rel="noopener" href="https://www.youdao.com/result?word=${encodeURIComponent(word)}&lang=en">中文释义 ${ic('ext')}</a></div>`;
     pop.innerHTML = html;
     wire(pop);
     if (!data) PTE.speak(word);
-    pop.querySelector('[data-addc]').onclick = (ev) => {
-      const c = PTE.get('custom', {}); c[word] = { def: def || '(见有道)', ex, at: PTE.today() }; PTE.set('custom', c);
-      PTE.learn(word); ev.currentTarget.innerHTML = ic('check') + ' 已加入'; ev.currentTarget.disabled = true;
+    pop.querySelector('[data-addc]').onclick = async (ev) => {
+      const b = ev.currentTarget; b.disabled = true;
+      await PTE.collect(word, 'lookup'); b.innerHTML = ic('check') + ' 已在生词本';
     };
   };
 

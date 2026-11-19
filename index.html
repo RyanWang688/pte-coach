@@ -7,7 +7,7 @@
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=3">
+<link rel="stylesheet" href="assets/style.css?v=4">
 </head>
 <body>
 <main>
@@ -34,7 +34,8 @@
 
   <div class="row" style="justify-content:center;margin-top:28px"><button class="ghost sm" id="settings"></button></div>
 </main>
-<script src="assets/core.js?v=3"></script>
+<script src="assets/core.js?v=4"></script>
+<script src="assets/drag.js?v=4"></script>
 <script>
 PTE.nav('index.html');
 PTE.track('dashboard');
@@ -136,6 +137,11 @@ $('#settings').innerHTML = PTE.icon('gear') + ' 备份 / 换设备 / 往日任�
       L.push(`状态：${(sh.querySelector('#mood .on') || {}).textContent || '未选'}；卡点：${[...sh.querySelectorAll('#stuck .on')].map(b => b.textContent).join('、') || '无'}`);
       L.push(`任务：${done.length}/${day.tasks.length}` + (notDone.length ? `（未完成：${notDone.join('、')}）` : ''));
       L.push(`单词：新学 ${s.newWords.length}；默写 ${s.review.ok} 对 / ${s.review.bad} 错；累计 ${Object.keys(srs).length}；明日到期 ${Object.values(srs).filter(x => x.due <= PTE.addDays(PTE.today(), 1)).length}` + (s.review.wrong.length ? `\n  默写错词：${s.review.wrong.join(', ')}` : ''));
+      const cnt = [0, 0, 0, 0]; Object.values(srs).forEach(x => cnt[PTE.stageOf(x.box)]++);
+      const TN = { spell: '拼写', meaning: '听音辨义', cloze: '例句填空', dictation: '例句听写', recognize: '看词选义' };
+      L.push(`记忆：${PTE.STAGES.map(([n], j) => `${n} ${cnt[j]}`).join(' / ')}；收藏生词 ${Object.values(srs).filter(x => x.star).length}；快要忘记(<60%) ${Object.values(srs).filter(x => PTE.retention(x) < 0.6).length}` + (s.review.types ? `\n  题型正确率：${Object.entries(s.review.types).map(([k, [a, b]]) => `${TN[k] || k} ${a}/${a + b}`).join('，')}` : ''));
+      const newStar = Object.entries(srs).filter(([, x]) => x.star && x.first === PTE.today()).map(([k]) => k);
+      if (newStar.length) L.push(`  今日新收藏：${newStar.join(', ')}`);
       L.push(`阅读：理解 ${s.mcq.ok}/${s.mcq.ok + s.mcq.bad}；填空 ${s.cloze.ok}/${s.cloze.ok + s.cloze.bad}` + (s.cloze.wrong.length ? `；填错：${s.cloze.wrong.join(', ')}` : ''));
       L.push(`WFD：${s.wfd.length} 句` + (s.wfd.length ? `，平均 ${avg(s.wfd)}%\n  最弱：\n    ${low(s.wfd)}` : ''));
       L.push(`RS：${s.rs.length} 句` + (s.rs.length ? `，平均 ${avg(s.rs)}%\n  最弱：\n    ${low(s.rs)}` : ''));

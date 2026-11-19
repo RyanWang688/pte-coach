@@ -2,29 +2,40 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>单词复习 · PTE Rise</title>
+<title>记忆复习 · PTE Rise</title>
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=3">
+<link rel="stylesheet" href="assets/style.css?v=4">
 </head>
 <body>
 <main>
-  <h1>听音默写</h1>
+  <div class="row"><h1 class="grow">记忆复习</h1><a class="btn sm ghost" href="words.html">生词本</a></div>
   <div class="seg" id="modes"></div>
   <div class="row small" style="margin-bottom:8px"><span class="mute grow" id="pos"></span><span class="combo" id="combo"></span></div>
   <div class="prog"><i id="bar" style="width:0"></i></div>
   <div class="card flash" id="box"></div>
   <p class="center small mute" id="foot"></p>
 </main>
-<script src="assets/core.js?v=3"></script>
+<script src="assets/core.js?v=4"></script>
+<script src="assets/drag.js?v=4"></script>
 <script>
-PTE.nav('review.html');
+PTE.nav('words.html');
 PTE.track('review');
-const MODES = { due: ['到期复习', 'redo'], new: ['今日新词', 'spark'], wrong: ['错词本', 'flag'] };
+document.querySelector('a.btn[href="words.html"]').innerHTML = PTE.icon('cards') + ' 生词本';
+const MODES = { due: ['今日到期', 'redo'], new: ['今日新词', 'spark'], wrong: ['错词强化', 'flag'] };
+const TYPES = {
+  spell: ['拼写', '#FF6F91', 'pen'], meaning: ['听音辨义', '#14B8B0', 'head'], cloze: ['例句填空', '#3BA9FF', 'book'],
+  dictation: ['例句听写', '#7C5CFF', 'mic'], recognize: ['看词选义', '#FFB020', 'eye'],
+};
+const PREF = ['spell', 'spell', 'meaning', 'cloze', 'dictation', 'recognize', 'cloze', 'spell'];
+const ORDER = ['spell', 'meaning', 'cloze', 'dictation', 'recognize'];
 const mode = new URLSearchParams(location.search).get('mode') || 'due';
 document.getElementById('modes').innerHTML = Object.entries(MODES).map(([k, [v, i]]) => `<button class="${k === mode ? 'on' : ''}" onclick="location.href='review.html?mode=${k}'">${PTE.icon(i)} ${v}</button>`).join('');
-document.getElementById('foot').textContent = { due: '答对：下次间隔变长 · 答错：明天再来', new: '第一遍默写只做统计，不影响复习间隔', wrong: '按出错次数排序' }[mode];
+document.getElementById('foot').textContent = { due: '同一个词每次换一种题型考 · 答对间隔拉长，答错明天再来', new: '今日新词第一遍：拼写，只做统计', wrong: '出错最多的词优先，答题会计入记忆曲线' }[mode];
+const $ = (s) => document.querySelector(s);
+const shuffle = (a) => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map(x => x[1]);
+
 (async () => {
   const [day, wmap] = await Promise.all([PTE.currentDay(), PTE.words()]);
   const custom = PTE.get('custom', {});
@@ -34,58 +45,124 @@ document.getElementById('foot').textContent = { due: '答对：下次间隔变�
   else if (mode === 'wrong') keys = Object.keys(srs).filter(k => srs[k].bad > 0).sort((a, b) => srs[b].bad - srs[a].bad);
   else keys = PTE.due();
   keys = keys.filter(k => wmap[k] || custom[k]);
-  if (mode !== 'wrong') keys.sort(() => Math.random() - 0.5);
-  const box = document.getElementById('box');
-  let i = 0, ok = 0, bad = 0, combo = 0, best = 0, retry = false;
+  if (mode !== 'wrong') keys = shuffle(keys);
+  const box = $('#box');
+  let i = 0, ok = 0, bad = 0, combo = 0, best = 0;
   if (!keys.length) {
-    box.innerHTML = `<div class="pulse-in"><div style="color:var(--mint)">${PTE.icon('check').replace('class="i"', 'class="i" style="width:64px;height:64px"')}</div><p class="big" style="font-weight:800;font-size:1.3rem">${mode === 'due' ? '今天没有到期的词' : '这里是空的'}</p><div class="row" style="justify-content:center"><a class="btn" href="review.html?mode=new">${PTE.icon('spark')} 默写今日新词</a><a class="btn pri" href="read.html">${PTE.icon('book')} 去阅读</a></div></div>`;
+    box.innerHTML = `<div class="pulse-in"><div style="color:var(--mint)">${PTE.icon('check').replace('class="i"', 'class="i" style="width:64px;height:64px"')}</div><p style="font-weight:800;font-size:1.3rem">${mode === 'due' ? '今天的复习都完成了' : '这里是空的'}</p><div class="row" style="justify-content:center"><a class="btn" href="words.html">${PTE.icon('chart')} 看记忆报告</a><a class="btn pri" href="read.html">${PTE.icon('book')} 去阅读</a></div></div>`;
     return;
   }
-  const show = () => {
-    document.getElementById('pos').textContent = `${Math.min(i + 1, keys.length)} / ${keys.length}`;
-    document.getElementById('bar').style.width = (i / keys.length * 100) + '%';
-    document.getElementById('combo').innerHTML = combo >= 3 ? `${PTE.icon('flame')} 连击 ×${combo}` : '';
-    if (i >= keys.length) {
-      const pct = ok / (ok + bad || 1);
-      box.innerHTML = `<div class="pulse-in"><div class="scorering">${PTE.ring(pct, 120, 10, Math.round(pct * 100) + '%')}</div><p style="font-weight:800;font-size:1.3rem;margin:8px 0">${pct === 1 ? '全对！太强了' : pct >= .8 ? '很棒！' : '错词明天再见'}</p><p class="mute">${ok} 对 · ${bad} 错 · 最高连击 ${best}</p><div class="row" style="justify-content:center"><a class="btn" href="review.html?mode=wrong">${PTE.icon('flag')} 错词本</a><a class="btn pri" href="index.html">${PTE.icon('home')} 回到今日</a></div></div>`;
-      box.querySelector('.fg').style.stroke = pct >= .8 ? 'var(--ok)' : 'var(--coral)';
-      PTE.animateRings(box); if (pct >= .8) PTE.confetti();
-      return;
-    }
-    const k = keys[i]; const w = wmap[k];
-    const meaning = w ? w.t : custom[k].def;
-    box.className = 'card flash';
-    box.innerHTML = `<span class="chip">${srs[k] ? '第 ' + srs[k].box + ' 级' : '新词'}</span>
-      <div class="meaning" style="margin:16px 0">${PTE.esc(meaning)}</div>
-      <div class="row" style="justify-content:center"><button class="pri round" id="say" aria-label="发音">${PTE.icon('vol')}</button><button class="round" id="slow" aria-label="慢速">${PTE.icon('slow')}</button></div>
-      <input type="text" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="拼写单词，回车提交">
-      <div id="fb" style="margin-top:14px;min-height:2em"></div>`;
-    const word = w ? w.w : k;
-    const say = (r) => PTE.speak(word, { rate: r });
-    document.getElementById('say').onclick = () => say(); document.getElementById('slow').onclick = () => say(0.6);
-    const ans = document.getElementById('ans'); ans.focus(); say();
-    retry = false;
-    ans.onkeydown = (e) => {
-      if (e.key !== 'Enter') return;
-      const right = ans.value.trim().toLowerCase() === word.toLowerCase();
-      if (retry) { if (right) { i++; show(); } else { ans.value = ''; box.classList.remove('badf'); void box.offsetWidth; box.classList.add('badf'); } return; }
-      if (mode === 'new') PTE.updateStats(s => { if (right) s.review.ok++; else { s.review.bad++; if (!s.review.wrong.includes(k)) s.review.wrong.push(k); } });
-      else PTE.grade(k, right);
-      if (right) {
-        ok++; combo++; best = Math.max(best, combo);
-        box.classList.add('okf');
-        document.getElementById('fb').innerHTML = `<b class="ok" style="font-size:1.2rem">${PTE.icon('check')} ${PTE.esc(word)}</b>`;
-        if (combo > 0 && combo % 10 === 0) { PTE.confetti(); PTE.toast(`${combo} 连击！`); }
-        setTimeout(() => { i++; show(); }, 650);
-      } else {
-        bad++; combo = 0; retry = true;
-        box.classList.add('badf');
-        document.getElementById('fb').innerHTML = `<div class="bad" style="font-size:1.6rem;font-weight:800">${PTE.esc(word)}</div><div class="mute">/${PTE.esc(w ? w.p : '')}/</div>` + (w ? `<div class="ex" style="background:var(--bg);border-radius:14px;padding:10px 12px;margin-top:8px;text-align:left">${PTE.esc(w.e)} <button class="sm round" id="ex" aria-label="朗读例句">${PTE.icon('vol')}</button><div class="small mute">${PTE.esc(w.c)}</div></div>` : '') + '<div class="small mute" style="margin-top:6px">照着正确拼写敲一遍，回车继续</div>';
-        const ex = document.getElementById('ex'); if (ex) ex.onclick = () => PTE.speak(w.e);
-        ans.value = ''; say();
-      }
-    };
+
+  const info = (k) => {
+    const w = wmap[k], c = custom[k] || {};
+    return w ? { word: w.w, mean: w.t, p: w.p, ex: w.e, excn: w.c, cn: true } : { word: k, mean: c.def || '（释义加载失败，可点有道查看）', p: c.p || '', ex: c.ex || '', excn: '', cn: false };
   };
+  const findForm = (ex, word) => { const stem = word.toLowerCase().slice(0, Math.max(3, Math.min(5, word.length - 2))); return (ex.match(/[A-Za-z'’-]+/g) || []).find(t => t.toLowerCase().startsWith(stem)); };
+  const avail = (t, f) => t === 'spell' || (t === 'cloze' || t === 'dictation' ? f.ex && findForm(f.ex, f.word) : f.cn);
+  const pickType = (k, f) => {
+    if (mode === 'new') return 'spell';
+    const it = srs[k] || { box: 1 };
+    const start = ORDER.indexOf(PREF[it.box] || 'spell');
+    for (let n = 0; n < ORDER.length; n++) { const t = ORDER[(start + n) % ORDER.length]; if (avail(t, f) && t !== it.last) return t; }
+    return 'spell';
+  };
+  const distract = (f) => shuffle(PTE._wlist.filter(x => x.w !== f.word)).slice(0, 3).map(x => x.t.split('；')[0]);
+
+  const record = (k, t, right) => {
+    if (mode === 'new') PTE.updateStats(s => { if (right) s.review.ok++; else { s.review.bad++; if (!s.review.wrong.includes(k)) s.review.wrong.push(k); } });
+    else PTE.grade(k, right, t);
+    if (right) { ok++; combo++; best = Math.max(best, combo); if (combo % 10 === 0) { PTE.confetti(); PTE.toast(`${combo} 连击！`); } }
+    else { bad++; combo = 0; }
+    PTE.updateDock();
+  };
+  const reveal = (f, extra) => `<div class="bad" style="font-size:1.6rem;font-weight:800">${PTE.esc(f.word)}</div><div class="mute">${f.p ? '/' + PTE.esc(f.p) + '/' : ''} · ${PTE.esc(f.mean)}</div>` + (f.ex ? `<div style="background:var(--bg);border-radius:14px;padding:10px 12px;margin-top:8px;text-align:left">${PTE.esc(f.ex)} <button class="sm round" id="exs" aria-label="朗读例句">${PTE.icon('vol')}</button><div class="small mute">${PTE.esc(f.excn)}</div></div>` : '') + (extra || '');
+  const wireEx = (f) => { const b = $('#exs'); if (b) b.onclick = () => PTE.speak(f.ex); };
+  const next = () => { i++; show(); };
+  const good = (f) => { box.classList.add('okf'); $('#fb').innerHTML = `<b class="ok" style="font-size:1.2rem">${PTE.icon('check')} ${PTE.esc(f.word)}</b>`; setTimeout(next, 700); };
+
+  function show() {
+    $('#pos').textContent = `${Math.min(i + 1, keys.length)} / ${keys.length}`;
+    $('#bar').style.width = (i / keys.length * 100) + '%';
+    $('#combo').innerHTML = combo >= 3 ? `${PTE.icon('flame')} 连击 ×${combo}` : '';
+    if (i >= keys.length) return finish();
+    const k = keys[i], f = info(k), t = pickType(k, f), [tn, tc, ti] = TYPES[t];
+    const it = srs[k];
+    const stage = it ? PTE.STAGES[PTE.stageOf(it.box)] : PTE.STAGES[0];
+    box.className = 'card flash';
+    const head = `<div class="row" style="justify-content:center"><span class="qtype" style="background:${tc}">${PTE.icon(ti)} ${tn}</span><span class="chip" style="color:${stage[1]}">${stage[0]}</span></div>`;
+    const typeIn = (ph) => `<input type="text" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${ph}">`;
+    let retry = false;
+    const askTyping = (check, answerFor) => {
+      const ans = $('#ans'); ans.focus();
+      ans.onkeydown = (e) => {
+        if (e.key !== 'Enter') return;
+        const v = ans.value.trim();
+        if (retry) { if (v.toLowerCase() === answerFor.toLowerCase()) next(); else { ans.value = ''; box.classList.remove('badf'); void box.offsetWidth; box.classList.add('badf'); } return; }
+        const right = check(v); record(k, t, right);
+        if (right) return good(f);
+        retry = true; box.classList.add('badf');
+        $('#fb').innerHTML = reveal(f, `<div class="small mute" style="margin-top:6px">照着正确答案「${PTE.esc(answerFor)}」敲一遍，回车继续</div>`); wireEx(f);
+        ans.value = ''; PTE.speak(f.word);
+      };
+    };
+    const askChoice = (opts, rightIdx) => {
+      box.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+        const right = +b.dataset.j === rightIdx; record(k, t, right);
+        box.querySelectorAll('.opt').forEach(o => o.disabled = true);
+        b.classList.add(right ? 'right' : 'wrong'); box.querySelector(`.opt[data-j="${rightIdx}"]`).classList.add('right');
+        if (right) { $('#fb').innerHTML = `<b class="ok">${PTE.icon('check')} ${PTE.esc(f.word)}</b> <span class="mute">/${PTE.esc(f.p)}/</span>`; PTE.speak(f.word); setTimeout(next, 900); }
+        else { box.classList.add('badf'); $('#fb').innerHTML = reveal(f, `<div style="margin-top:10px"><button class="pri" id="go">下一个 ${PTE.icon('arrow')}</button></div>`); wireEx(f); $('#go').onclick = next; }
+      });
+    };
+
+    if (t === 'spell') {
+      box.innerHTML = `${head}<div class="meaning" style="margin:16px 0">${PTE.esc(f.mean)}</div>
+        <div class="row" style="justify-content:center"><button class="pri round" id="say" aria-label="发音">${PTE.icon('vol')}</button><button class="round" id="slow" aria-label="慢速">${PTE.icon('slow')}</button></div>
+        ${typeIn('拼写单词，回车提交')}<div id="fb" style="margin-top:14px;min-height:2em"></div>`;
+      $('#say').onclick = () => PTE.speak(f.word); $('#slow').onclick = () => PTE.speak(f.word, { rate: 0.6 }); PTE.speak(f.word);
+      askTyping(v => v.toLowerCase() === f.word.toLowerCase(), f.word);
+    } else if (t === 'cloze') {
+      const form = findForm(f.ex, f.word);
+      const html = PTE.esc(f.ex).replace(new RegExp('\\b' + form.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), `<b style="color:var(--pri)">${PTE.esc(form[0])}${'_'.repeat(Math.max(3, form.length - 1))}</b>`);
+      box.innerHTML = `${head}<div style="font-size:1.15rem;font-weight:600;margin:18px 0 6px;max-width:34ch">${html}</div><div class="small mute">${PTE.esc(f.excn || f.mean)}</div>
+        ${typeIn('填入完整单词（注意词形）')}<div id="fb" style="margin-top:14px;min-height:2em"></div>`;
+      askTyping(v => v.toLowerCase() === form.toLowerCase(), form);
+    } else if (t === 'dictation') {
+      const form = findForm(f.ex, f.word);
+      box.innerHTML = `${head}<button class="bigbtn" id="play" style="margin:18px 0 6px" aria-label="播放例句">${PTE.icon('play')}</button><div class="small mute">听例句，写下整句（重点是「${PTE.esc(f.word[0])}…」这个词）</div>
+        <textarea id="ans" style="min-height:70px;margin-top:12px;text-align:center" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="写下听到的句子，回车提交"></textarea><div id="fb" style="margin-top:14px;min-height:2em"></div>`;
+      $('#play').onclick = () => PTE.speak(f.ex); setTimeout(() => PTE.speak(f.ex), 400);
+      const ans = $('#ans'); ans.focus();
+      ans.onkeydown = (e) => {
+        if (e.key !== 'Enter' || e.shiftKey) return; e.preventDefault();
+        if (ans.disabled) return next();
+        const r = PTE.wordScore(f.ex, ans.value);
+        const right = PTE.tokens(ans.value).includes(form.toLowerCase().replace(/’/g, "'")) && r.score / r.total >= 0.7;
+        record(k, t, right); ans.disabled = true;
+        $('#fb').innerHTML = `<div class="diff" style="line-height:2">${r.words.map((w, j) => `<span class="${r.marks[j] ? 'm' : 'x'}">${PTE.esc(w)}</span>`).join(' ')}</div><div class="small ${right ? 'ok' : 'bad'}" style="font-weight:700">${right ? '目标词拼对了，整句 ' : '目标词「' + PTE.esc(form) + '」没写对，或整句低于 70%，'}${Math.round(r.score / r.total * 100)}%</div><div class="small mute">${PTE.esc(f.excn)}</div><button class="pri" id="go" style="margin-top:10px">下一个 ${PTE.icon('arrow')}</button>`;
+        box.classList.add(right ? 'okf' : 'badf'); $('#go').onclick = next; $('#go').focus();
+      };
+    } else {
+      const opts = shuffle([f.mean.split('；')[0], ...distract(f)]); const rightIdx = opts.indexOf(f.mean.split('；')[0]);
+      const prompt = t === 'meaning'
+        ? `<button class="bigbtn" id="play" style="margin:18px 0 6px" aria-label="播放">${PTE.icon('vol')}</button><div class="small mute">只听发音，选出意思</div>`
+        : `<div style="font-size:2rem;font-weight:800;margin:18px 0 2px">${PTE.esc(f.word)}</div><div class="small mute">选出这个词的意思</div>`;
+      box.innerHTML = `${head}${prompt}<div style="width:100%;max-width:420px;margin-top:10px">${opts.map((o, j) => `<button class="opt" data-j="${j}">${PTE.esc(o)}</button>`).join('')}</div><div id="fb" style="margin-top:10px;min-height:2em"></div>`;
+      if (t === 'meaning') { $('#play').onclick = () => PTE.speak(f.word); setTimeout(() => PTE.speak(f.word), 300); }
+      askChoice(opts, rightIdx);
+    }
+  }
+
+  function finish() {
+    const pct = ok / (ok + bad || 1);
+    const s = PTE.srs(); const counts = [0, 0, 0, 0]; Object.values(s).forEach(x => counts[PTE.stageOf(x.box)]++);
+    box.innerHTML = `<div class="pulse-in"><div class="scorering">${PTE.ring(pct, 120, 10, Math.round(pct * 100) + '%')}</div><p style="font-weight:800;font-size:1.3rem;margin:8px 0">${pct === 1 ? '全对！太强了' : pct >= .8 ? '很棒！' : '错的词明天会换个题型再考'}</p><p class="mute">${ok} 对 · ${bad} 错 · 最高连击 ${best}</p>
+      <div class="row" style="justify-content:center;margin:6px 0 14px">${PTE.STAGES.map(([n, c], j) => `<span class="chip" style="color:${c}">${n} ${counts[j]}</span>`).join('')}</div>
+      <div class="row" style="justify-content:center"><a class="btn" href="words.html">${PTE.icon('chart')} 记忆报告</a><a class="btn pri" href="index.html">${PTE.icon('home')} 回到今日</a></div></div>`;
+    box.querySelector('.fg').style.stroke = pct >= .8 ? 'var(--ok)' : 'var(--coral)';
+    PTE.animateRings(box); if (pct >= .8) PTE.confetti();
+    $('#bar').style.width = '100%';
+  }
   show();
 })();
 </script>

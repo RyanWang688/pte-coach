@@ -59,15 +59,54 @@
     const s = PTE.srs(); const k = word.toLowerCase();
     if (!s[k]) { s[k] = { box: 1, due: PTE.addDays(PTE.today(), 1), first: PTE.today(), ok: 0, bad: 0 }; PTE.set('srs', s); PTE.updateStats(st => { if (!st.newWords.includes(k)) st.newWords.push(k); }); }
   };
-  PTE.grade = (word, correct) => {
+  PTE.grade = (word, correct, type) => {
     const s = PTE.srs(); const k = word.toLowerCase();
     const it = s[k] || { box: 1, first: PTE.today(), ok: 0, bad: 0 };
     if (correct) { it.box = Math.min(it.box + 1, GAPS.length - 1); it.ok++; } else { it.box = 1; it.bad++; }
     it.due = PTE.addDays(PTE.today(), correct ? GAPS[it.box] : 1);
+    it.last = type || it.last; it.seen = PTE.today();
+    it.hist = (it.hist || []).concat([[PTE.today(), type || 'spell', correct ? 1 : 0]]).slice(-20);
     s[k] = it; PTE.set('srs', s);
-    PTE.updateStats(st => { if (correct) st.review.ok++; else { st.review.bad++; if (!st.review.wrong.includes(k)) st.review.wrong.push(k); } });
+    PTE.updateStats(st => {
+      if (correct) st.review.ok++; else { st.review.bad++; if (!st.review.wrong.includes(k)) st.review.wrong.push(k); }
+      st.review.types = st.review.types || {}; const t = st.review.types[type || 'spell'] = st.review.types[type || 'spell'] || [0, 0]; t[correct ? 0 : 1]++;
+    });
   };
   PTE.due = () => { const s = PTE.srs(), t = PTE.today(); return Object.keys(s).filter(k => s[k].due <= t); };
+  // memory stages along the forgetting curve
+  PTE.STAGES = [['新学', '#FF6F91', 1, 1], ['短期记忆', '#FFB020', 2, 3], ['巩固中', '#3BA9FF', 4, 5], ['已掌握', '#21C38E', 6, 99]];
+  PTE.stageOf = (box) => PTE.STAGES.findIndex(([, , a, b]) => box >= a && box <= b);
+  PTE.GAPS = GAPS;
+  // estimated recall probability now: R = exp(-t / S), stability S grows with box
+  PTE.retention = (it) => {
+    const last = it.seen || it.first; const t = Math.max(0, (new Date(PTE.today()) - new Date(last)) / 864e5);
+    const S = [1, 1.2, 2.5, 5, 9, 17, 35, 70][it.box] || 1.2;
+    return Math.exp(-t / S);
+  };
+  // add a word to the personal wordbook (any word; non-list words get an English definition)
+  PTE.collect = async (raw, src) => {
+    const map = await PTE.words();
+    const hit = PTE.lemma ? await PTE.lemma(raw) : map[raw.toLowerCase()];
+    const k = hit ? hit.w.toLowerCase() : raw.toLowerCase().replace(/[^a-z'-]/g, '');
+    if (!k || k.length < 2) return null;
+    if (!hit) {
+      const c = PTE.get('custom', {});
+      if (!c[k]) {
+        c[k] = { def: '', ex: '', at: PTE.today() };
+        try {
+          const r = await fetch('https://api.dictionaryapi.dev/api/v2/entries/en/' + encodeURIComponent(k));
+          if (r.ok) { const e = (await r.json())[0]; const m = e.meanings[0]; const d = m.definitions.find(x => x.example) || m.definitions[0];
+            c[k] = { def: m.partOfSpeech + '. ' + m.definitions[0].definition, ex: d.example || '', p: (e.phonetic || '').replace(/\//g, ''), at: PTE.today() }; }
+        } catch (e) {}
+        PTE.set('custom', c);
+      }
+    }
+    PTE.learn(k);
+    const s = PTE.srs(); const was = s[k].star; s[k].star = 1; s[k].src = s[k].src || src || ''; PTE.set('srs', s);
+    PTE.toast(was ? `「${k}」已在生词本里` : `已加入生词本：${k}`);
+    PTE.updateDock && PTE.updateDock(true);
+    return k;
+  };
 
   /* ---------- speech ---------- */
   let voices = [];
@@ -167,7 +206,7 @@
 
   /* ---------- layout ---------- */
   PTE.nav = (active) => {
-    const items = [['index.html', '今日', 'home'], ['read.html', '阅读', 'book'], ['review.html', '复习', 'cards'], ['drill.html', '训练', 'target'], ['guide.html', '题型', 'compass'], ['log.html', '复盘', 'chart']];
+    const items = [['index.html', '今日', 'home'], ['read.html', '阅读', 'book'], ['words.html', '生词本', 'cards'], ['drill.html', '训练', 'target'], ['guide.html', '题型', 'compass'], ['log.html', '复盘', 'chart']];
     const el = document.createElement('header');
     el.className = 'appbar';
     el.innerHTML = '<a class="logo" href="index.html"><img src="assets/logo.svg" alt=""><span>PTE <b>Rise</b></span></a><nav class="tabbar">' + items.map(([h, t, ic]) => `<a href="${h}"${h === active ? ' class="on"' : ''}>${PTE.icon(ic)}<span>${t}</span></a>`).join('') + '</nav>';
