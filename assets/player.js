@@ -11,7 +11,7 @@
     bar.className = 'player';
     bar.innerHTML = `<button class="round pri" data-a="play" aria-label="播放">${ic('play')}</button>
       <button class="round ghost" data-a="prev" aria-label="上一句">${ic('arrow').replace('<svg', '<svg style="transform:scaleX(-1)"')}</button>
-      <div class="grow" style="min-width:0"><input type="range" min="0" max="${n - 1}" value="0" step="1" aria-label="进度"><div class="small mute pmeta"><span data-pos>第 1 / ${n} 句</span><span data-hint>点任意句子可从那里读</span></div></div>
+      <div class="grow" style="min-width:0"><input type="range" min="0" max="${n - 1}" value="0" step="1" aria-label="进度"><div class="small mute pmeta"><span data-pos>第 1 / ${n} 句</span><span data-hint>点句首 ▶ 从那句读 · 点单词查释义（自动暂停）</span></div></div>
       <button class="round ghost" data-a="next" aria-label="下一句">${ic('arrow')}</button>
       <button class="sm ghost" data-a="rate">${state.rate}×</button>
       <button class="round ghost" data-a="voice" aria-label="选择声音">${ic('gear')}</button>`;
@@ -39,6 +39,7 @@
     };
     const pause = () => { state.playing = false; state.token++; speechSynthesis.cancel(); paint(); };
     const api = { pause, play: speakFrom, state, bar };
+    PTE.pausePlayer = () => { if (current && current.state.playing) current.pause(); };
 
     playBtn.onclick = () => state.playing ? pause() : speakFrom(state.i);
     bar.querySelector('[data-a=prev]').onclick = () => state.playing ? speakFrom(state.i - 1) : (state.i = Math.max(0, state.i - 1), paint());
@@ -50,11 +51,18 @@
     bar.querySelector('[data-a=voice]').onclick = () => { pause(); PTE.voiceSheet(); };
     range.oninput = () => { state.i = +range.value; if (state.playing) { state.token++; speechSynthesis.cancel(); } paint(); };
     range.onchange = () => { if (bar.classList.contains('on') || state.playing) speakFrom(+range.value); };
-    // while listening, a tap on a sentence jumps there (word lookup resumes when paused)
-    sentEls.forEach((el, j) => el.addEventListener('click', (e) => {
-      if (!state.playing) return;
-      e.stopImmediatePropagation(); e.preventDefault(); speakFrom(j);
-    }, true));
+    // Clear split of intents: a word = look it up (player pauses); the ▶ before a sentence, or
+    // the gaps between words, = read from that sentence.
+    sentEls.forEach((el, j) => {
+      const b = document.createElement('button');
+      b.className = 'sjump'; b.type = 'button'; b.title = '从这句开始读'; b.setAttribute('aria-label', '从这句开始读'); b.innerHTML = ic('play');
+      b.onclick = (e) => { e.stopPropagation(); speakFrom(j); };
+      el.prepend(b);
+      el.addEventListener('click', (e) => {
+        if (e.target.closest('.w,.tw,.sjump')) return; // word clicks go to the lookup drawer
+        e.stopPropagation(); speakFrom(j);
+      });
+    });
     addEventListener('pagehide', pause);
     paint();
     return api;

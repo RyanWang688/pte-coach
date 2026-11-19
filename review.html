@@ -6,7 +6,7 @@
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=11">
+<link rel="stylesheet" href="assets/style.css?v=14">
 </head>
 <body>
 <main>
@@ -20,8 +20,8 @@
   <div class="kbdhint"><span><kbd>Enter</kbd> 提交 / 继续</span><span><kbd>1</kbd>–<kbd>4</kbd> 选择选项</span><span><kbd>Ctrl</kbd> 重听</span></div>
 </div>
 </main>
-<script src="assets/core.js?v=11"></script>
-<script src="assets/drag.js?v=11"></script>
+<script src="assets/core.js?v=14"></script>
+<script src="assets/drag.js?v=14"></script>
 <script>
 PTE.nav('words.html');
 PTE.track('review');
@@ -110,7 +110,8 @@ const shuffle = (a) => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]
         const right = check(v); record(k, t, right);
         if (right) return good(f);
         retry = true; box.classList.add('badf');
-        $('#fb').innerHTML = reveal(f, `<div class="small mute" style="margin-top:6px">照着正确答案「${PTE.esc(answerFor)}」敲一遍，回车继续</div>`); wireEx(f);
+        $('#fb').innerHTML = reveal(f, `<div class="small mute" style="margin-top:6px">照着正确答案「${PTE.esc(answerFor)}」敲一遍，回车继续 · <button class="sm ghost" id="skipq" style="padding:2px 8px">跳过 ${PTE.icon('arrow')}</button></div>`); wireEx(f);
+        $('#skipq').onclick = next;
         ans.value = ''; PTE.speak(f.word);
       };
     };
@@ -127,14 +128,14 @@ const shuffle = (a) => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]
     if (t === 'spell') {
       box.innerHTML = `${head}<div class="meaning" style="margin:16px 0">${PTE.esc(f.mean)}</div>
         <div class="row" style="justify-content:center"><button class="pri round" id="say" aria-label="发音">${PTE.icon('vol')}</button><button class="round" id="slow" aria-label="慢速">${PTE.icon('slow')}</button></div>
-        ${typeIn('拼写单词，回车提交')}<div id="fb" style="margin-top:14px;min-height:2em"></div>`;
+        ${typeIn('拼写单词，回车提交（不会就直接回车看答案）')}<div id="fb" style="margin-top:14px;min-height:2em"></div>`;
       $('#say').onclick = () => PTE.speak(f.word); $('#slow').onclick = () => PTE.speak(f.word, { rate: 0.6 }); PTE.speak(f.word);
       askTyping(v => v.toLowerCase() === f.word.toLowerCase(), f.word);
     } else if (t === 'cloze') {
       const form = findForm(f.ex, f.word);
       const html = PTE.esc(f.ex).replace(new RegExp('\\b' + form.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b'), `<b style="color:var(--pri)">${PTE.esc(form[0])}${'_'.repeat(Math.max(3, form.length - 1))}</b>`);
       box.innerHTML = `${head}<div style="font-size:1.15rem;font-weight:600;margin:18px 0 6px;max-width:34ch">${html}</div><div class="small mute">${PTE.esc(f.excn || f.mean)}</div>
-        ${typeIn('填入完整单词（注意词形）')}<div id="fb" style="margin-top:14px;min-height:2em"></div>`;
+        ${typeIn('填入完整单词，注意词形（不会就直接回车）')}<div id="fb" style="margin-top:14px;min-height:2em"></div>`;
       askTyping(v => v.toLowerCase() === form.toLowerCase(), form);
     } else if (t === 'dictation') {
       const form = findForm(f.ex, f.word);

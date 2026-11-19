@@ -322,8 +322,13 @@
   };
   PTE.sheet = (html) => {
     const s = document.createElement('div'); s.className = 'scrim';
-    s.innerHTML = `<div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`;
-    s.onclick = (e) => { if (e.target === s) s.remove(); };
+    s.innerHTML = `<div class="sheet" role="dialog"><div class="grab"></div><button class="pop-close sheet-close" aria-label="关闭">${PTE.icon('x')} 关闭 <kbd>Esc</kbd></button>${html}</div>`;
+    const shut = () => { s.remove(); removeEventListener('keydown', onKey, true); };
+    const onKey = (e) => { if (e.key === 'Escape') { e.stopPropagation(); shut(); } };
+    addEventListener('keydown', onKey, true);
+    s.onclick = (e) => { if (e.target === s) shut(); };
+    s.querySelector('.sheet-close').onclick = shut;
+    s.close = shut;
     document.body.appendChild(s); return s;
   };
 })();

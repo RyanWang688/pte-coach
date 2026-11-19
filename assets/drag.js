@@ -32,7 +32,8 @@
       if (!document.querySelector('.article, .diff')) return;
       const h = document.createElement('div'); h.className = 'coachmark';
       h.innerHTML = `<b>${PTE.icon('spark')} 收藏生词</b><br>遇到不认识的词，<b>按住拖动</b>到${desk() ? '左侧的「生词本」' : '右下角的生词本按钮'}${desk() ? '' : '（手机上先长按）'}。之后会按记忆曲线换不同题型考你。<div style="margin-top:10px"><button class="sm acc">知道了</button></div>`;
-      document.body.appendChild(h); h.querySelector('button').onclick = () => { h.remove(); PTE.set('dragHint', 1); };
+      document.body.appendChild(h); document.body.classList.add('hint-drop');
+      h.querySelector('button').onclick = () => { h.remove(); document.body.classList.remove('hint-drop'); PTE.set('dragHint', 1); };
     }, 1200);
   }
 

@@ -6,7 +6,7 @@
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=11">
+<link rel="stylesheet" href="assets/style.css?v=14">
 </head>
 <body>
 <main>
@@ -26,20 +26,21 @@
     </aside>
   </div>
 </main>
-<script src="assets/core.js?v=11"></script>
-<script src="assets/drag.js?v=11"></script>
-<script src="assets/lookup.js?v=11"></script>
-<script src="assets/player.js?v=11"></script>
+<script src="assets/core.js?v=14"></script>
+<script src="assets/drag.js?v=14"></script>
+<script src="assets/lookup.js?v=14"></script>
+<script src="assets/player.js?v=14"></script>
 <script>
 PTE.nav('read.html');
 PTE.track('read');
 document.getElementById('hints').innerHTML = [
   ['<span class="tw" style="font-weight:600">word</span>', '今日新词，点击看释义和例句'],
-  [PTE.icon('spark'), '任何单词都能点开查词'],
+  [PTE.icon('spark'), '任何单词都能点开查词，朗读会自动暂停'],
   [PTE.icon('cards'), '把单词拖到左侧「生词本」收藏'],
+  ['<span class="chip" style="padding:2px 6px;background:var(--pri-soft);color:var(--pri)">' + PTE.icon('play') + '</span>', '鼠标移到句子上，点句首的 ▶ 从这句开始读'],
   ['<kbd>Space</kbd>', '播放 / 暂停朗读'],
   ['<kbd>←</kbd> <kbd>→</kbd>', '上一句 / 下一句'],
-  [PTE.icon('vol'), '播放时点任意句子，从那句开始读'],
+  ['<kbd>Esc</kbd>', '关闭查词面板'],
 ].map(([i, t]) => `<span><span style="min-width:62px;display:inline-flex;gap:4px;color:var(--mute)">${i}</span>${t}</span>`).join('');
 const RE = /\{\{([^}|]+)(?:\|([^}]+))?\}\}/g;
 const mark = (s) => s.replace(RE, (_, shown, lemma) => `<span class="tw" data-lemma="${PTE.esc(lemma || shown)}">${PTE.esc(shown)}</span>`);
