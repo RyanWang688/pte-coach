@@ -5,20 +5,19 @@
 <title>教练复盘 · PTE Rise</title>
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=10">
 </head>
 <body>
 <main>
-  <h1>教练复盘</h1>
-  <p class="small mute" style="margin:6px 0 18px">你每交一次作业，教练就在这里写一条复盘</p>
+  <div class="pagehead"><div><div class="eyebrow">Coach log</div><h1 style="margin-top:10px">教练复盘</h1><p>你每交一次作业，教练就会在这里写一条复盘，并据此调整第二天的任务。</p></div></div>
   <div class="tl" id="list"></div>
 </main>
-<script src="assets/core.js?v=7"></script>
-<script src="assets/drag.js?v=7"></script>
+<script src="assets/core.js?v=10"></script>
+<script src="assets/drag.js?v=10"></script>
 <script>
 PTE.nav('log.html');
-const F = [['summary', '总结', 'chat', '#6C5CFF'], ['scores', '数据', 'chart', '#3BA9FF'], ['plan', '调整', 'redo', '#21C38E'], ['todo', '需要你做', 'flag', '#FF7A59']];
+const F = [['summary', '总结', 'chat', '#2E4A7A'], ['scores', '数据', 'chart', '#4F7CAC'], ['plan', '调整', 'redo', '#3C8A63'], ['todo', '需要你做', 'flag', '#D9774A']];
 PTE.load('data/log.json').then(list => {
   document.getElementById('list').innerHTML = list.slice().reverse().map((e, i) => `<div class="card fadein" style="animation-delay:${i * 60}ms"><span class="dot"></span>
     <div class="row"><span class="chip" style="background:var(--grad);color:#fff">${e.day ? 'Day ' + e.day : '开营'}</span><b class="grow">${PTE.esc(e.title)}</b><span class="small mute">${PTE.esc(e.date)}</span></div>

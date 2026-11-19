@@ -5,28 +5,31 @@
 <title>记忆复习 · PTE Rise</title>
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=10">
 </head>
 <body>
 <main>
-  <div class="row"><h1 class="grow">记忆复习</h1><a class="btn sm ghost" href="words.html">生词本</a></div>
+<div class="narrow">
+  <div class="pagehead"><div class="grow"><div class="eyebrow">Review · Spaced repetition</div><h1 style="margin-top:10px">记忆复习</h1></div><a class="btn ghost" href="words.html">返回生词本</a></div>
   <div class="seg" id="modes"></div>
   <div class="row small" style="margin-bottom:8px"><span class="mute grow" id="pos"></span><span class="combo" id="combo"></span></div>
   <div class="prog"><i id="bar" style="width:0"></i></div>
   <div class="card flash" id="box"></div>
   <p class="center small mute" id="foot"></p>
+  <div class="kbdhint"><span><kbd>Enter</kbd> 提交 / 继续</span><span><kbd>1</kbd>–<kbd>4</kbd> 选择选项</span><span><kbd>Ctrl</kbd> 重听</span></div>
+</div>
 </main>
-<script src="assets/core.js?v=7"></script>
-<script src="assets/drag.js?v=7"></script>
+<script src="assets/core.js?v=10"></script>
+<script src="assets/drag.js?v=10"></script>
 <script>
 PTE.nav('words.html');
 PTE.track('review');
 document.querySelector('a.btn[href="words.html"]').innerHTML = PTE.icon('cards') + ' 生词本';
 const MODES = { due: ['今日到期', 'redo'], new: ['今日新词', 'spark'], wrong: ['错词强化', 'flag'] };
 const TYPES = {
-  spell: ['拼写', '#FF6F91', 'pen'], meaning: ['听音辨义', '#14B8B0', 'head'], cloze: ['例句填空', '#3BA9FF', 'book'],
-  dictation: ['例句听写', '#7C5CFF', 'mic'], recognize: ['看词选义', '#FFB020', 'eye'],
+  spell: ['拼写', '#C46E55', 'pen'], meaning: ['听音辨义', '#4E8F86', 'head'], cloze: ['例句填空', '#4F7CAC', 'book'],
+  dictation: ['例句听写', '#7A6E9C', 'mic'], recognize: ['看词选义', '#C8963A', 'eye'],
 };
 const PREF = ['spell', 'spell', 'meaning', 'cloze', 'dictation', 'recognize', 'cloze', 'spell'];
 const ORDER = ['spell', 'meaning', 'cloze', 'dictation', 'recognize'];
@@ -80,6 +83,12 @@ const shuffle = (a) => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]
   const next = () => { i++; show(); };
   const good = (f) => { box.classList.add('okf'); $('#fb').innerHTML = `<b class="ok" style="font-size:1.2rem">${PTE.icon('check')} ${PTE.esc(f.word)}</b>`; setTimeout(next, 700); };
 
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Control') { const b = document.querySelector('#box #say, #box #play'); if (b) b.click(); return; }
+    if (e.target.closest('input,textarea')) return;
+    if (/^[1-4]$/.test(e.key)) { const o = document.querySelector(`#box .opt[data-j="${+e.key - 1}"]:not([disabled])`); if (o) o.click(); }
+    else if (e.key === 'Enter') { const g = document.querySelector('#box #go'); if (g) { e.preventDefault(); g.click(); } }
+  });
   function show() {
     $('#pos').textContent = `${Math.min(i + 1, keys.length)} / ${keys.length}`;
     $('#bar').style.width = (i / keys.length * 100) + '%';

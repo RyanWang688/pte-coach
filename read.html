@@ -5,25 +5,42 @@
 <title>阅读学词 · PTE Rise</title>
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=10">
 </head>
 <body>
 <main>
-  <h1>阅读学词</h1>
-  <div class="row small mute" style="margin:8px 0 4px" id="hints"></div>
-  <div id="arts"></div>
-  <div class="row" style="margin-top:26px"><h2 class="grow" style="margin:0">今日 25 词</h2><span class="chip" id="known"></span></div>
-  <div class="wordgrid" id="chips" style="margin-top:12px"></div>
+  <div class="pagehead"><div><div class="eyebrow">Reading · Vocabulary in context</div><h1 style="margin-top:10px">阅读学词</h1><p>先通读全文，再做理解题和填空题。黄色高亮的是今天要学的新词。</p></div></div>
+  <div class="readgrid">
+    <div id="arts"></div>
+    <aside>
+      <div class="card">
+        <div class="row"><b class="grow">今日新词</b><span class="small mute" id="known"></span></div>
+        <div class="prog" style="margin:10px 0 14px"><i id="knownBar" style="width:0"></i></div>
+        <div class="wordgrid" id="chips"></div>
+      </div>
+      <div class="card">
+        <b>使用方式</b>
+        <div class="legendrow" id="hints" style="margin-top:12px"></div>
+      </div>
+    </aside>
+  </div>
 </main>
-<script src="assets/core.js?v=7"></script>
-<script src="assets/drag.js?v=7"></script>
-<script src="assets/lookup.js?v=7"></script>
-<script src="assets/player.js?v=7"></script>
+<script src="assets/core.js?v=10"></script>
+<script src="assets/drag.js?v=10"></script>
+<script src="assets/lookup.js?v=10"></script>
+<script src="assets/player.js?v=10"></script>
 <script>
 PTE.nav('read.html');
 PTE.track('read');
-document.getElementById('hints').innerHTML = [['book', '黄色 = 今日新词'], ['spark', '任何单词都能点'], ['vol', '可听全文 / 例句'], ['check', '读完再答题']].map(([i, t]) => `<span class="chip">${PTE.icon(i)} ${t}</span>`).join('');
+document.getElementById('hints').innerHTML = [
+  ['<span class="tw" style="font-weight:600">word</span>', '今日新词，点击看释义和例句'],
+  [PTE.icon('spark'), '任何单词都能点开查词'],
+  [PTE.icon('cards'), '把单词拖到左侧「生词本」收藏'],
+  ['<kbd>Space</kbd>', '播放 / 暂停朗读'],
+  ['<kbd>←</kbd> <kbd>→</kbd>', '上一句 / 下一句'],
+  [PTE.icon('vol'), '播放时点任意句子，从那句开始读'],
+].map(([i, t]) => `<span><span style="min-width:62px;display:inline-flex;gap:4px;color:var(--mute)">${i}</span>${t}</span>`).join('');
 const RE = /\{\{([^}|]+)(?:\|([^}]+))?\}\}/g;
 const mark = (s) => s.replace(RE, (_, shown, lemma) => `<span class="tw" data-lemma="${PTE.esc(lemma || shown)}">${PTE.esc(shown)}</span>`);
 const plain = (s) => s.replace(RE, '$1');
@@ -32,17 +49,28 @@ let wmap;
   const day = await PTE.currentDay();
   let arts; [arts, wmap] = await Promise.all([PTE.load('data/articles/' + day.articles + '.json'), PTE.words()]);
   const box = document.getElementById('arts');
+  const players = [];
+  addEventListener('keydown', (e) => {
+    if (e.target.closest('input,textarea,select') || e.ctrlKey || e.metaKey || e.altKey) return;
+    const p = players.find(x => x.state.playing) || players.find(x => x.state.i > 0) || players[0];
+    if (!p) return;
+    if (e.code === 'Space') { e.preventDefault(); p.bar.querySelector('[data-a=play]').click(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); p.bar.querySelector('[data-a=next]').click(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); p.bar.querySelector('[data-a=prev]').click(); }
+  });
   arts.forEach((a, ai) => {
     const el = document.createElement('section');
-    el.className = 'card fadein';
-    el.innerHTML = `<div class="banner" style="background:${a.color || 'var(--grad)'}">${PTE.icon(a.icon || 'book', 'big')}<div><div class="small" style="opacity:.85;font-weight:700">文章 ${ai + 1} · ${PTE.esc(a.topic)}</div><div class="t">${PTE.esc(a.title)}</div></div></div>
-      <div class="stepper"><span class="on"></span><span></span><span></span></div>
+    el.className = 'card artcard fadein';
+    el.style.marginTop = ai ? '28px' : '0';
+    el.innerHTML = `<div class="banner"><span class="topic">${PTE.icon(a.icon || 'book')} 文章 ${ai + 1} · ${PTE.esc(a.topic)}</span><div class="t">${PTE.esc(a.title)}</div></div>
+      <div class="artbody">
+      <div class="stepper" title="阅读 → 理解题 → 填空"><span class="on"></span><span></span><span></span></div>
       <div class="artwrap"><div class="article">${a.paras.map(p => '<p>' + PTE.sentences(p).map((s, j, arr) => `<span class="sent"${j === arr.length - 1 ? ' data-pend="1"' : ''}>${mark(s)}</span>`).join(' ') + '</p>').join('')}</div></div>
-      <div class="center"><button class="pri lg" data-act="done">${PTE.icon('check')} 读完了，开始答题</button></div>
-      <div class="quiz"></div>`;
+      <div class="row" style="margin-top:8px"><button class="pri" data-act="done">${PTE.icon('check')} 读完了，开始答题</button><span class="small mute">3 道理解题 + 填空</span></div>
+      <div class="quiz"></div></div>`;
     box.appendChild(el);
     const art = el.querySelector('.article');
-    PTE.player(el.querySelector('.artwrap'), [...art.querySelectorAll('.sent')]);
+    players.push(PTE.player(el.querySelector('.artwrap'), [...art.querySelectorAll('.sent')]));
     PTE.clickable(art);
     el.querySelector('[data-act=done]').onclick = (ev) => {
       ev.currentTarget.parentElement.remove();
@@ -56,15 +84,15 @@ let wmap;
     const q = el.querySelector('.quiz');
     if (i >= a.questions.length) { el.querySelectorAll('.stepper span')[2].classList.add('on'); return cloze(el, a, score); }
     const x = a.questions[i];
-    q.innerHTML = `<div class="fadein"><div class="row" style="margin-top:6px"><span class="chip">${PTE.icon('eye')} 理解题 ${i + 1}/${a.questions.length}</span></div>
-      <p style="font-weight:700;font-size:1.05rem">${PTE.esc(x.q)}</p>${x.options.map((o, j) => `<button class="opt" data-j="${j}">${String.fromCharCode(65 + j)}. ${PTE.esc(o)}</button>`).join('')}<div class="fb"></div></div>`;
+    q.innerHTML = `<div class="fadein qsec"><div class="eyebrow">理解题 ${i + 1} / ${a.questions.length}</div>
+      <p style="font:600 1.15rem/1.5 var(--serif);margin:10px 0 6px">${PTE.esc(x.q)}</p>${x.options.map((o, j) => `<button class="opt" data-j="${j}">${String.fromCharCode(65 + j)}. ${PTE.esc(o)}</button>`).join('')}<div class="fb"></div></div>`;
     q.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     q.querySelectorAll('.opt').forEach(b => b.onclick = () => {
       const j = +b.dataset.j, right = j === x.a;
       q.querySelectorAll('.opt').forEach(o => o.disabled = true);
       b.classList.add(right ? 'right' : 'wrong'); q.querySelector(`.opt[data-j="${x.a}"]`).classList.add('right');
       PTE.updateStats(s => { right ? s.mcq.ok++ : s.mcq.bad++; });
-      q.querySelector('.fb').innerHTML = `<div class="why">${right ? '<b class="ok">答对了！</b> ' : ''}${PTE.esc(x.why)}</div><div class="center" style="margin-top:12px"><button class="pri">${i + 1 < a.questions.length ? '下一题' : '去填空'} ${PTE.icon('arrow')}</button></div>`;
+      q.querySelector('.fb').innerHTML = `<div class="why">${right ? '<b class="ok">答对了。</b> ' : '<b class="bad">答错了。</b> '}${PTE.esc(x.why)}</div><div style="margin-top:14px"><button class="pri">${i + 1 < a.questions.length ? '下一题' : '去填空'} ${PTE.icon('arrow')}</button></div>`;
       q.querySelector('.fb button').onclick = () => mcq(el, a, i + 1, score + (right ? 1 : 0));
     });
   }
@@ -76,12 +104,12 @@ let wmap;
       let m; const re = new RegExp(RE.source, 'g');
       while ((m = re.exec(sent))) items.push({ sent, shown: m[1], lemma: m[2] || m[1] });
     }));
-    c.innerHTML = `<div class="fadein"><div class="row" style="margin:6px 0 12px"><span class="chip">${PTE.icon('pen')} 填空 · ${items.length} 空</span><span class="small mute">首字母已给出，注意词形变化</span></div>` + items.map((it, i) => {
+    c.innerHTML = `<div class="fadein qsec"><div class="eyebrow">填空 · ${items.length} 空</div><p class="small mute" style="margin:6px 0 16px">首字母已给出，注意时态、单复数等词形变化。按 <kbd>Enter</kbd> 跳到下一空。</p>` + items.map((it, i) => {
       const w = wmap[it.lemma.toLowerCase()]; const hint = w ? w.t.split('；')[0] : '';
       let used = false;
       const html = it.sent.replace(RE, (_, s) => { if (!used && s === it.shown) { used = true; return `${PTE.esc(s[0])}<input class="blank" data-i="${i}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="填空">`; } return PTE.esc(s); });
-      return `<p style="margin:0 0 14px;line-height:2">${html} <span class="chip">${PTE.esc(hint)}</span><span class="ans" data-i="${i}"></span></p>`;
-    }).join('') + `<div class="center"><button class="pri lg" data-act="check">${PTE.icon('check')} 检查</button></div></div>`;
+      return `<p style="margin:0 0 16px;font:1.08rem/2 var(--serif)"><span class="mute small" style="font-family:var(--sans);margin-right:6px">${i + 1}.</span>${html} <span class="chip" style="font-family:var(--sans)">${PTE.esc(hint)}</span><span class="ans" data-i="${i}"></span></p>`;
+    }).join('') + `<div><button class="pri" data-act="check">${PTE.icon('check')} 检查答案</button></div></div>`;
     const inputs = [...c.querySelectorAll('.blank')];
     inputs.forEach((inp, k) => inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); (inputs[k + 1] || c.querySelector('[data-act=check]')).focus(); } });
     inputs[0] && inputs[0].focus({ preventScroll: true });
@@ -106,7 +134,9 @@ let wmap;
     const srs = PTE.srs();
     const list = PTE._wlist.slice(day.newWords[0], day.newWords[1]);
     document.getElementById('chips').innerHTML = list.map(w => `<button class="sm${srs[w.w.toLowerCase()] ? ' known' : ''}" data-w="${PTE.esc(w.w)}">${PTE.esc(w.w)}</button>`).join('');
-    document.getElementById('known').textContent = `已接触 ${list.filter(w => srs[w.w.toLowerCase()]).length} / ${list.length}`;
+    const kn = list.filter(w => srs[w.w.toLowerCase()]).length;
+    document.getElementById('known').textContent = `已学 ${kn} / ${list.length}`;
+    document.getElementById('knownBar').style.width = (kn / list.length * 100) + '%';
     document.querySelectorAll('#chips [data-w]').forEach(b => b.onclick = () => PTE.lookup(b.dataset.w));
   };
   chips();

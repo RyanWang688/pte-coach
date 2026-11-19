@@ -5,24 +5,24 @@
 <title>题型指南 · PTE Rise</title>
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=10">
 </head>
 <body>
 <main>
-  <h1>22 种题型</h1>
-  <div class="row" style="margin-top:12px" id="facts"></div>
+  <div class="pagehead"><div class="grow"><div class="eyebrow">Test format · PTE Academic</div><h1 style="margin-top:10px">22 种题型</h1><p>考试约 2 小时，分口语写作、阅读、听力三部分。带 ★ 的题型同时计入两项分数，优先练。</p></div></div>
+  <div class="row" style="margin-bottom:16px" id="facts"></div>
   <div class="seg" id="seg"></div>
   <div id="list"></div>
   <p class="small mute center" style="margin-top:20px">题量和时间是大致范围，以 <a href="https://www.pearsonpte.com/pte-academic/test-format" target="_blank" rel="noopener">Pearson 官方说明</a>为准</p>
 </main>
-<script src="assets/core.js?v=7"></script>
-<script src="assets/drag.js?v=7"></script>
+<script src="assets/core.js?v=10"></script>
+<script src="assets/drag.js?v=10"></script>
 <script>
 PTE.nav('guide.html');
 PTE.track('guide');
 document.getElementById('facts').innerHTML = [['clock', '约 2 小时'], ['list', '22 种计分题'], ['spark', '★ = 优先练'], ['target', '一题常计两项分']].map(([i, t]) => `<span class="chip">${PTE.icon(i)} ${t}</span>`).join('');
-const S = { speaking: ['口语写作', '#FF6F91', 'mic'], reading: ['阅读', '#5B6CFF', 'eye'], listening: ['听力', '#14B8B0', 'head'], tpl: ['模板', '#FF7A59', 'pen'], method: ['训练方法', '#7C5CFF', 'spark'] };
+const S = { speaking: ['口语写作', '#C46E55', 'mic'], reading: ['阅读', '#5C6FA3', 'eye'], listening: ['听力', '#4E8F86', 'head'], tpl: ['模板', '#D9774A', 'pen'], method: ['训练方法', '#7A6E9C', 'spark'] };
 const T = [
   ['speaking', 'Personal Introduction', '不计分', 1, '准备 25 秒 · 说 30 秒', '会发给院校，准备一段固定的自我介绍'],
   ['speaking', 'Read Aloud · RA', '★', '6–7', '准备 30–40 秒 · 读约 40 秒', '流利度和发音比内容更重要。读错了不要回读'],
@@ -63,11 +63,12 @@ const render = () => {
   seg.innerHTML = Object.entries(S).map(([k, [n, c, i]]) => `<button class="${k === cur ? 'on' : ''}" data-k="${k}">${PTE.icon(i)} ${n}</button>`).join('');
   seg.querySelectorAll('button').forEach(b => b.onclick = () => { cur = b.dataset.k; history.replaceState(null, '', '#' + cur); render(); });
   const [, color, icon] = S[cur];
+  list.className = cur === 'tpl' ? 'narrow' : 'tgrid'; list.style.marginLeft = cur === 'tpl' ? '0' : '';
   if (cur === 'tpl') {
     list.innerHTML = TPL.map(([t, b], i) => `<details class="tpl fadein" ${i === 0 ? 'open' : ''}><summary><span class="chip" style="background:${color};color:#fff">${PTE.icon('pen')}</span>${t}</summary><div class="body"><div class="tplt">${b}</div><div class="small mute" style="margin-top:6px">黄色部分换成题目里的内容</div></div></details>`).join('');
   } else if (cur === 'method') {
     PTE.load('data/plan.json').then(p => {
-      list.innerHTML = p.principles.map(([a, b], i) => `<div class="card tcard fadein" style="animation-delay:${i * 50}ms"><div class="ic" style="background:${['#6C5CFF', '#FF6F91', '#3BA9FF', '#21C38E', '#FFB020', '#FF7A59'][i % 6]}">${PTE.icon(['redo', 'clock', 'book', 'list', 'target', 'chart'][i % 6])}</div><div><div class="nm">${a}</div><div class="small mute">${PTE.esc(b)}</div></div></div>`).join('');
+      list.innerHTML = p.principles.map(([a, b], i) => `<div class="card tcard fadein" style="animation-delay:${i * 50}ms"><div class="ic" style="background:${['#2E4A7A', '#C46E55', '#4F7CAC', '#3C8A63', '#C8963A', '#D9774A'][i % 6]}">${PTE.icon(['redo', 'clock', 'book', 'list', 'target', 'chart'][i % 6])}</div><div><div class="nm">${a}</div><div class="small mute">${PTE.esc(b)}</div></div></div>`).join('');
     });
   } else {
     list.innerHTML = T.filter(t => t[0] === cur).map(([, nm, tag, n, time, how], i) => `<div class="card tcard fadein" style="animation-delay:${i * 40}ms"><div class="ic" style="background:${tag === '★' ? color : 'var(--line)'};color:${tag === '★' ? '#fff' : 'var(--mute)'}">${PTE.icon(tag === '★' ? 'spark' : icon)}</div>

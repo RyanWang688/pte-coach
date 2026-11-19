@@ -3,70 +3,71 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PTE Rise</title>
-<meta name="theme-color" content="#6C5CFF">
+<meta name="theme-color" content="#F6F1E8">
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=10">
 </head>
 <body>
 <main>
-  <section class="hero">
-    <div class="kicker" id="kicker">DAY 1 / 60</div>
-    <h1 id="title">…</h1>
-    <div class="rings" id="rings"></div>
-  </section>
-
-  <div class="coach fadein"><img src="assets/logo.svg" alt=""><div class="bubble" id="coach"></div></div>
-
-  <div class="row" style="margin-top:22px"><h2 class="grow" style="margin:0">今日闯关</h2><span class="chip" id="taskCount"></span></div>
-  <div class="prog" style="margin:10px 0 16px"><i id="taskBar" style="width:0"></i></div>
-  <div class="quest" id="quest"></div>
-
-  <button class="cta" id="finish" style="width:100%;text-align:left">
-    <span class="ic"></span>
-    <span class="grow"><b style="display:block;font-size:1.05rem">完成今天，交作业</b><span class="small" style="opacity:.75">生成汇报，复制发给教练</span></span>
-    <span class="arrow"></span>
-  </button>
-
-  <h2>60 天路线</h2>
-  <div class="steps" id="steps"></div>
-
-  <div class="row" style="justify-content:center;margin-top:28px"><button class="ghost sm" id="settings"></button></div>
+  <div class="dash">
+    <section>
+      <header class="hero">
+        <div class="eyebrow" id="kicker"></div>
+        <h1 id="title" style="margin-top:10px">…</h1>
+        <div class="sub" id="sub"></div>
+      </header>
+      <div class="row" style="margin:32px 0 12px"><h2 class="grow" style="margin:0">今日任务</h2><span class="small mute" id="taskCount"></span></div>
+      <div class="prog" style="margin-bottom:16px"><i id="taskBar" style="width:0"></i></div>
+      <div class="quest" id="quest"></div>
+      <div class="row" style="margin-top:16px"><button class="ghost sm" id="settings"></button><span class="grow"></span><span class="small mute">点任务展开说明 · 点左侧图标标记完成</span></div>
+    </section>
+    <aside>
+      <div class="card progcard" id="prog"></div>
+      <button class="cta" id="finish">
+        <span class="ic"></span>
+        <span class="grow"><b style="display:block;font-size:1rem">完成今天，交作业</b><span class="small" style="opacity:.7">生成汇报，复制发给教练</span></span>
+        <span class="arrow"></span>
+      </button>
+      <div class="card"><div class="coach"><img src="assets/logo.svg" alt=""><div><div class="eyebrow" style="margin-bottom:8px">教练寄语</div><div class="bubble" id="coach"></div></div></div></div>
+      <div class="card"><div class="eyebrow" style="margin-bottom:6px">60 天路线</div><div class="steps" id="steps"></div></div>
+    </aside>
+  </div>
 </main>
-<script src="assets/core.js?v=7"></script>
-<script src="assets/drag.js?v=7"></script>
+<script src="assets/core.js?v=10"></script>
+<script src="assets/drag.js?v=10"></script>
 <script>
 PTE.nav('index.html');
 PTE.track('dashboard');
 const $ = (s) => document.querySelector(s);
 $('#finish .ic').innerHTML = PTE.icon('trophy'); $('#finish .arrow').innerHTML = PTE.icon('arrow');
-$('#settings').innerHTML = PTE.icon('gear') + ' 备份 / 换设备 / 往日任务';
+$('#settings').innerHTML = PTE.icon('gear') + ' 备份与往日任务';
 (async () => {
   const [day, plan] = await Promise.all([PTE.currentDay(), PTE.load('data/plan.json'), PTE.words()]);
   const doneKey = 'done:' + day.day;
   let done = PTE.get(doneKey, []);
   let open = -1;
   const ph = plan.phases.find(p => p.n === day.phase);
-  $('#kicker').textContent = `DAY ${day.day} / ${plan.totalDays} · 阶段 ${ph.n} ${ph.name}` + (day.day !== day.latest ? ' · 往日' : '');
+  const hr = new Date().getHours();
+  $('#kicker').textContent = `Day ${day.day} of ${plan.totalDays} · 阶段 ${ph.n} · ${ph.name}` + (day.day !== day.latest ? ' · 往日' : '');
   $('#title').textContent = day.title.replace(/^第 ?\d+ ?天[：:]\s*/, '');
+  const totalMin = day.tasks.reduce((a, k) => a + k.mins, 0);
 
   const learned = Object.keys(PTE.srs()).length;
   const mins = Math.round(Object.values(PTE.stats().mins).reduce((a, b) => a + b, 0));
-  const streak = PTE.streak();
-  $('#rings').innerHTML = [
-    [day.day / plan.totalDays, PTE.icon('flag'), '进度', `Day ${day.day} / ${plan.totalDays}`],
-    [mins / 240, PTE.icon('clock'), '今日学习', `${mins} / 240 分钟`],
-    [learned / 1040, PTE.icon('book'), '已学单词', `${learned} / 1040`],
-  ].map(([p, inner, l, v]) => `<div class="ringbox">${PTE.ring(p, 58, 6, inner)}<div><div class="lbl">${l}</div><div class="val">${v}</div></div></div>`).join('') +
-    `<div class="ringbox"><span style="width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.18);display:grid;place-items:center;color:#FFD25C">${PTE.icon('flame')}</span><div><div class="lbl">连续打卡</div><div class="val">${streak} 天</div></div></div>`;
+  const streak = PTE.streak(); const due = PTE.due().length;
+  $('#prog').innerHTML = `<div class="big">${PTE.ring(day.day / plan.totalDays, 84, 8, `<span style="font:600 1.15rem var(--serif)">${day.day}</span>`)}
+      <div><div class="eyebrow">总进度</div><div style="font:600 1.3rem/1.3 var(--serif);margin-top:6px">第 ${day.day} 天 / 共 ${plan.totalDays} 天</div><div class="small mute">${ph.name} · Day ${ph.days[0]}–${ph.days[1]}</div></div></div>
+    <div class="mini">
+      <div><b>${mins}<span class="small mute" style="font-family:var(--sans)"> / 240</span></b><span>今日学习（分钟）</span></div>
+      <div><b>${learned}<span class="small mute" style="font-family:var(--sans)"> / 1040</span></b><span>已学单词</span></div>
+      <div><b style="color:${due ? 'var(--acc)' : 'inherit'}">${due}</b><span>今日到期复习</span></div>
+      <div><b>${streak}</b><span>连续打卡（天）</span></div>
+    </div>`;
   PTE.animateRings();
 
-  // coach bubble: first sentence, expandable
-  const first = day.coachNote.split(/(?<=[。！？])/)[0];
-  const coach = $('#coach');
-  const short = () => { coach.innerHTML = PTE.esc(first) + (first.length < day.coachNote.length ? ' <span class="more">展开</span>' : ''); const m = coach.querySelector('.more'); if (m) m.onclick = () => { coach.textContent = day.coachNote; }; };
-  short();
+  $('#coach').textContent = day.coachNote;
 
   const render = () => {
     const nextIdx = day.tasks.findIndex((k, i) => !done.includes(i) && k.mod !== 'break');
@@ -75,16 +76,18 @@ $('#settings').innerHTML = PTE.icon('gear') + ' 备份 / 换设备 / 往日任�
       const m = PTE.MOD[k.mod] || PTE.MOD.guide;
       const start = `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; t += k.mins;
       const cls = ['qitem', done.includes(i) ? 'done' : '', i === nextIdx ? 'next' : '', i === open ? 'open' : ''].join(' ');
-      return `<div class="${cls}" data-i="${i}">
-        <div class="rail"><div class="node" style="background:${m.c}" data-tog title="点击标记完成">${PTE.icon(m.ic)}<span class="check">${PTE.icon('check')}</span></div><div class="line"></div></div>
-        <div class="qcard" data-open><div class="qtitle">${PTE.esc(k.title)}</div>
-          <div class="qmeta">${start} 开始 · ${k.mins} 分钟 · ${m.n}</div>
-          <div class="qmore"><div style="padding-top:8px">${PTE.esc(k.detail || '')}</div>
-            <div class="qact">${k.link ? `<a class="btn pri sm" href="${k.link}">开始 ${PTE.icon('arrow')}</a>` : ''}<button class="sm" data-tog>${done.includes(i) ? '撤销完成' : PTE.icon('check') + ' 完成'}</button></div></div>
-        </div></div>`;
+      return `<div class="${cls}" data-i="${i}" data-open>
+        <div class="rail"><span class="time">${start}</span><div class="node" style="background:${m.c}" data-tog title="${done.includes(i) ? '撤销完成' : '标记完成'}">${PTE.icon(m.ic)}<span class="check">${PTE.icon('check')}</span></div></div>
+        <div class="qcard"><div class="qtitle">${PTE.esc(k.title)}${i === nextIdx ? '<span class="nexttag">下一步</span>' : ''}</div>
+          <div class="qmeta">${k.mins} 分钟 · ${m.n}</div>
+          <div class="qmore"><div style="padding-top:10px;line-height:1.7">${PTE.esc(k.detail || '')}</div>
+            <div class="qact">${k.link ? `<a class="btn pri sm" href="${k.link}">开始 ${PTE.icon('arrow')}</a>` : ''}<button class="sm ghost" data-tog>${done.includes(i) ? '撤销完成' : PTE.icon('check') + ' 标记完成'}</button></div></div>
+        </div>
+        ${k.link ? `<a class="go" href="${k.link}" aria-label="开始" data-go>${PTE.icon('arrow')}</a>` : '<span class="go"></span>'}</div>`;
     }).join('');
-    $('#taskCount').textContent = `${done.length} / ${day.tasks.length}`;
+    $('#taskCount').textContent = `已完成 ${done.length} / ${day.tasks.length}`;
     $('#taskBar').style.width = (done.length / day.tasks.length * 100) + '%';
+    $('#sub').textContent = `${day.tasks.length} 项任务 · 约 ${Math.round(totalMin / 6) / 10} 小时 · ${done.length === day.tasks.length ? '今天全部完成 ✓' : hr < 12 ? '早上好，从第一项开始吧' : hr < 18 ? '下午好，继续保持' : '晚上好，完成后记得交作业'}`;
     document.querySelectorAll('.qitem').forEach(el => {
       const i = +el.dataset.i;
       el.querySelectorAll('[data-tog]').forEach(b => b.onclick = (e) => {
@@ -93,17 +96,18 @@ $('#settings').innerHTML = PTE.icon('gear') + ' 备份 / 换设备 / 往日任�
         done = was ? done.filter(x => x !== i) : [...done, i];
         PTE.set(doneKey, done);
         if (!was && done.length === day.tasks.length) { PTE.confetti(); PTE.toast('今天全部完成！记得交作业'); }
-        else if (!was) PTE.toast('+1 关 ✓');
         render();
       });
-      el.querySelector('[data-open]').onclick = () => { open = open === i ? -1 : i; render(); };
+      el.querySelectorAll('[data-go], .qact a').forEach(a => a.onclick = (e) => e.stopPropagation());
+      el.onclick = () => { open = open === i ? -1 : i; render(); };
     });
   };
   render();
 
   $('#steps').innerHTML = plan.phases.map(p => {
     const pct = Math.max(0, Math.min(1, (day.day - p.days[0] + 1) / (p.days[1] - p.days[0] + 1)));
-    return `<div class="stepc${p.n === day.phase ? ' on' : ''}"><b>${p.name}</b><span class="mute">Day ${p.days[0]}–${p.days[1]}</span><div class="barx"><i style="width:${pct * 100}%"></i></div></div>`;
+    const cls = p.n === day.phase ? ' on' : day.day > p.days[1] ? ' past' : '';
+    return `<div class="stepc${cls}"><span class="dotn">${day.day > p.days[1] ? PTE.icon('check') : p.n}</span><div><b>${p.name} <span class="mute small" style="font-weight:400">Day ${p.days[0]}–${p.days[1]}</span></b><div class="small mute">${PTE.esc(p.goal.split('；')[0])}</div>${p.n === day.phase ? `<div class="barx"><i style="width:${pct * 100}%"></i></div>` : ''}</div></div>`;
   }).join('');
 
   /* ---------- report sheet ---------- */
@@ -115,7 +119,7 @@ $('#settings').innerHTML = PTE.icon('gear') + ' 备份 / 换设备 / 往日任�
       <div class="small mute">学习时长（网站记录到 ${tracked} 分钟）</div>
       <div class="row"><input type="range" id="hrs" min="0" max="6" step="0.5" value="${Math.min(6, Math.round(tracked / 30) / 2) || 4}" class="grow"><b id="hrsV"></b></div>
       <div class="small mute" style="margin-top:12px">状态</div>
-      <div class="choice" id="mood">${['😄 轻松', '🙂 还行', '😐 有点累', '😣 很吃力'].map(x => `<button class="mood sm">${x}</button>`).join('')}</div>
+      <div class="choice" id="mood">${['轻松', '还行', '有点累', '很吃力'].map(x => `<button class="mood sm">${x}</button>`).join('')}</div>
       <div class="small mute" style="margin-top:12px">卡在哪里（可多选）</div>
       <div class="choice" id="stuck">${stuck.map(x => `<button class="sm">${x}</button>`).join('')}</div>
       <input type="text" id="other" placeholder="补充：模考分数 / 目标分 / 考试日期…" style="margin-top:12px">

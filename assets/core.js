@@ -74,7 +74,7 @@
   };
   PTE.due = () => { const s = PTE.srs(), t = PTE.today(); return Object.keys(s).filter(k => s[k].due <= t); };
   // memory stages along the forgetting curve
-  PTE.STAGES = [['新学', '#FF6F91', 1, 1], ['短期记忆', '#FFB020', 2, 3], ['巩固中', '#3BA9FF', 4, 5], ['已掌握', '#21C38E', 6, 99]];
+  PTE.STAGES = [['新学', '#C46E55', 1, 1], ['短期记忆', '#C8963A', 2, 3], ['巩固中', '#4F7CAC', 4, 5], ['已掌握', '#3C8A63', 6, 99]];
   PTE.stageOf = (box) => PTE.STAGES.findIndex(([, , a, b]) => box >= a && box <= b);
   PTE.GAPS = GAPS;
   // estimated recall probability now: R = exp(-t / S), stability S grows with box
@@ -250,9 +250,9 @@
   };
   PTE.icon = (n, cls) => `<svg class="i${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n] || ''}</svg>`;
   PTE.MOD = {
-    guide: { n: '题型', ic: 'compass', c: '#7C5CFF' }, read: { n: '阅读学词', ic: 'book', c: '#3BA9FF' }, review: { n: '复习', ic: 'cards', c: '#FFB020' },
-    speak: { n: '口语', ic: 'mic', c: '#FF6F91' }, break: { n: '休息', ic: 'coffee', c: '#21C38E' }, listen: { n: '听力', ic: 'head', c: '#14B8B0' },
-    reading: { n: '阅读题', ic: 'eye', c: '#5B6CFF' }, write: { n: '写作', ic: 'pen', c: '#FF7A59' }, wrap: { n: '汇报', ic: 'flag', c: '#1B1A2E' },
+    guide: { n: '题型', ic: 'compass', c: '#7A6E9C' }, read: { n: '阅读学词', ic: 'book', c: '#4F7CAC' }, review: { n: '复习', ic: 'cards', c: '#C8963A' },
+    speak: { n: '口语', ic: 'mic', c: '#C46E55' }, break: { n: '休息', ic: 'coffee', c: '#7F9F78' }, listen: { n: '听力', ic: 'head', c: '#4E8F86' },
+    reading: { n: '阅读题', ic: 'eye', c: '#5C6FA3' }, write: { n: '写作', ic: 'pen', c: '#B0675C' }, wrap: { n: '汇报', ic: 'flag', c: '#2A2521' },
   };
 
   /* ---------- layout ---------- */
@@ -260,8 +260,12 @@
     const items = [['index.html', '今日', 'home'], ['read.html', '阅读', 'book'], ['words.html', '生词本', 'cards'], ['drill.html', '训练', 'target'], ['guide.html', '题型', 'compass'], ['log.html', '复盘', 'chart']];
     const el = document.createElement('header');
     el.className = 'appbar';
-    el.innerHTML = '<a class="logo" href="index.html"><img src="assets/logo.svg" alt=""><span>PTE <b>Rise</b></span></a><nav class="tabbar">' + items.map(([h, t, ic]) => `<a href="${h}"${h === active ? ' class="on"' : ''}>${PTE.icon(ic)}<span>${t}</span></a>`).join('') + '</nav>';
+    el.innerHTML = '<a class="logo" href="index.html"><img src="assets/logo.svg" alt=""><span>PTE <b>Rise</b></span></a><nav class="tabbar">' + items.map(([h, t, ic]) => `<a href="${h}"${h === active ? ' class="on"' : ''}${h === 'words.html' ? ' data-drop="1"' : ''}>${PTE.icon(ic)}<span>${t}</span>${h === 'words.html' ? '<span class="nbadge hidden"></span>' : ''}</a>`).join('') + '</nav>';
+    const st = PTE.stats(); const mins = Math.round(Object.values(st.mins).reduce((a, b) => a + b, 0));
+    el.insertAdjacentHTML('beforeend', `<div class="sidefoot"><div class="row"><span class="grow">今日学习</span><b>${mins} / 240 分钟</b></div><div class="prog"><i style="width:${Math.min(100, mins / 2.4)}%"></i></div><div>拖动任意单词到「生词本」即可收藏</div></div>`);
     document.body.prepend(el);
+    const s = PTE.srs(), t = PTE.today(); const starred = Object.keys(s).filter(k => s[k].star); const due = PTE.due().length;
+    const nb = el.querySelector('.nbadge'); if (nb && (due || starred.length)) { nb.textContent = due || starred.length; nb.classList.remove('hidden'); nb.classList.toggle('due', !!due); nb.title = due ? `${due} 个词今天到期` : `收藏 ${starred.length} 个`; }
     if (!document.querySelector('link[rel=icon]')) { const l = document.createElement('link'); l.rel = 'icon'; l.href = 'assets/logo.svg'; document.head.appendChild(l); }
   };
   PTE.toast = (msg) => { document.querySelectorAll('.toast').forEach(t => t.remove()); const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 2200); };
@@ -281,8 +285,8 @@
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const cv = document.createElement('canvas'); cv.id = 'confetti'; document.body.appendChild(cv);
     const ctx = cv.getContext('2d'); const W = cv.width = innerWidth, H = cv.height = innerHeight;
-    const cols = ['#6C5CFF', '#FF6F91', '#FFC845', '#21C38E', '#3BA9FF', '#9B5CFF'];
-    const ps = Array.from({ length: 140 }, () => ({ x: W / 2 + (Math.random() - .5) * 120, y: H * .35, vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, s: 5 + Math.random() * 6, c: cols[Math.random() * cols.length | 0], r: Math.random() * 6, vr: (Math.random() - .5) * .3 }));
+    const cols = ['#2E4A7A', '#D9774A', '#D9A13B', '#3C8A63', '#4F7CAC', '#E8D3B0'];
+    const ps = Array.from({ length: 90 }, () => ({ x: W / 2 + (Math.random() - .5) * 120, y: H * .35, vx: (Math.random() - .5) * 14, vy: -Math.random() * 14 - 4, s: 5 + Math.random() * 6, c: cols[Math.random() * cols.length | 0], r: Math.random() * 6, vr: (Math.random() - .5) * .3 }));
     let f = 0;
     (function tick() {
       ctx.clearRect(0, 0, W, H);

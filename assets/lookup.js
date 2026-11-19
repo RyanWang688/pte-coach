@@ -49,7 +49,7 @@
     if (hit) {
       const inSrs = (PTE.srs()[hit.w.toLowerCase()] || {}).star;
       pop.innerHTML = `<button class="x" aria-label="关闭">${ic('x')}</button>
-        <span class="chip" style="background:${hit.s === 'A' ? '#EFEAFF' : '#E2F4FF'};color:${hit.s === 'A' ? '#6C5CFF' : '#1C7FD1'}">${hit.s === 'A' ? '学术词 AWL' : 'PTE 话题词'} #${hit.i + 1}</span>
+        <span class="chip" style="background:${hit.s === 'A' ? '#E7ECF4' : '#E4EEF5'};color:${hit.s === 'A' ? '#2E4A7A' : '#3F6E9C'}">${hit.s === 'A' ? '学术词 AWL' : 'PTE 话题词'} #${hit.i + 1}</span>
         <div class="row" style="margin-top:6px"><span class="hw">${PTE.esc(hit.w)}</span><span class="mute">/${PTE.esc(hit.p)}/</span></div>
         <div class="row" style="margin:6px 0"><button class="pri sm" data-say="${PTE.esc(hit.w)}">${ic('vol')} 发音</button><button class="sm" data-say="${PTE.esc(hit.w)}" data-rate="0.6">${ic('slow')} 慢速</button></div>
         <div style="font-weight:600">${PTE.esc(hit.t).replace(/；(?=[a-z]+\. )/g, '<br>')}</div>

@@ -5,36 +5,38 @@
 <title>生词本 · PTE Rise</title>
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=7">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=10">
 </head>
 <body>
 <main>
-  <h1>生词本</h1>
-  <a class="cta" href="review.html" id="go" style="color:var(--bg)"></a>
+  <div class="pagehead"><div class="grow"><div class="eyebrow">Wordbook · Spaced repetition</div><h1 style="margin-top:10px">生词本</h1><p>按遗忘曲线安排复习，每次换一种题型考你，直到真正记住。</p></div></div>
+  <a class="cta" href="review.html" id="go" style="margin-bottom:24px"></a>
 
-  <h2>今日记忆报告</h2>
-  <div class="card">
-    <div class="row"><b class="grow">记忆阶段</b><span class="small mute" id="total"></span></div>
-    <div class="stack" id="stack" style="margin-top:10px"></div>
-    <div class="legend" id="legend"></div>
-    <div class="stats" id="kpi" style="margin-top:16px"></div>
-    <div id="types" class="row" style="margin-top:14px"></div>
-    <p class="small" id="insight" style="margin:14px 0 0"></p>
+  <div class="wbgrid">
+    <div>
+      <div class="card">
+        <div class="row"><b class="grow" style="font:600 1.1rem var(--serif)">今日记忆报告</b><span class="small mute" id="total"></span></div>
+        <div class="stack" id="stack" style="margin-top:14px"></div>
+        <div class="legend" id="legend"></div>
+        <div class="stats" id="kpi" style="grid-template-columns:1fr 1fr;margin-top:18px"></div>
+        <div id="types" class="row" style="margin-top:14px"></div>
+        <p class="small" id="insight" style="margin:14px 0 0;line-height:1.8;color:var(--ink2)"></p>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <b style="font:600 1.1rem var(--serif)">未来 7 天到期</b>
+        <div class="bars" id="bars" style="margin-top:14px"></div>
+      </div>
+      <details class="tpl" style="margin-top:16px"><summary></summary><div class="body" id="curve"></div></details>
+    </div>
+    <div>
+      <div class="seg" id="tabs" style="margin-top:0"></div>
+      <div class="card" id="list" style="margin-top:0"></div>
+    </div>
   </div>
-
-  <div class="card">
-    <b>未来 7 天到期</b>
-    <div class="bars" id="bars" style="margin-top:12px"></div>
-  </div>
-
-  <details class="tpl"><summary></summary><div class="body" id="curve"></div></details>
-
-  <div class="seg" id="tabs" style="margin-top:22px"></div>
-  <div class="card" id="list"></div>
 </main>
-<script src="assets/core.js?v=7"></script>
-<script src="assets/lookup.js?v=7"></script>
+<script src="assets/core.js?v=10"></script>
+<script src="assets/lookup.js?v=10"></script>
 <script>
 PTE.nav('words.html');
 PTE.track('words');
@@ -59,10 +61,10 @@ let tab = PTE.get('wbTab', 'star');
     const avgR = keys.length ? keys.reduce((a, k) => a + PTE.retention(s[k]), 0) / keys.length : 0;
     const weak = keys.filter(k => PTE.retention(s[k]) < 0.6);
     $('#kpi').innerHTML = [
-      ['check', '#21C38E', done ? Math.round(st.review.ok / done * 100) + '%' : '—', `今日正确率（${st.review.ok}/${done}）`],
-      ['trophy', '#FFB020', counts[3], '已掌握'],
-      ['spark', '#6C5CFF', Math.round(avgR * 100) + '%', '平均记忆强度'],
-      ['flag', '#FF6F91', weak.length, '快要忘记'],
+      ['check', '#3C8A63', done ? Math.round(st.review.ok / done * 100) + '%' : '—', `今日正确率（${st.review.ok}/${done}）`],
+      ['trophy', '#C8963A', counts[3], '已掌握'],
+      ['spark', '#2E4A7A', Math.round(avgR * 100) + '%', '平均记忆强度'],
+      ['flag', '#C46E55', weak.length, '快要忘记'],
     ].map(([ic, c, v, l]) => `<div class="stat"><span class="ic" style="background:${c}">${PTE.icon(ic)}</span><div><b>${v}</b><span>${l}</span></div></div>`).join('');
     const types = st.review.types || {};
     $('#types').innerHTML = Object.keys(types).length ? Object.entries(types).map(([k, [a, b]]) => `<span class="chip">${TN[k] || k} ${a}/${a + b}</span>`).join('') : '<span class="small mute">今天还没有复习记录</span>';
@@ -94,7 +96,7 @@ let tab = PTE.get('wbTab', 'star');
         <div style="text-align:right"><span class="chip" style="color:${stg[1]}">${stg[0]}</span><div class="small mute" style="margin-top:4px">${rel(it.due)}复习</div></div>
         <div class="str" title="记忆强度 ${Math.round(R * 100)}%"><i style="width:${R * 100}%;background:${R > .8 ? 'var(--ok)' : R > .6 ? 'var(--sun)' : 'var(--coral)'}"></i></div>
         ${it.star ? `<button class="sm round ghost" data-un="${k}" aria-label="移出收藏">${PTE.icon('x')}</button>` : ''}</div>`;
-    }).join('') : `<p class="center mute" style="padding:20px 0">${tab === 'star' ? '还没有收藏生词。在阅读或训练里，把不认识的词拖到右下角的生词本按钮（手机上长按再拖）。' : '暂时没有'}</p>`;
+    }).join('') : `<p class="center mute" style="padding:20px 0">${tab === 'star' ? (matchMedia('(min-width:1024px)').matches ? '还没有收藏生词。<br>在阅读或训练里，按住不认识的单词，拖到左侧的「生词本」即可收藏。' : '还没有收藏生词。<br>在阅读或训练里，长按不认识的单词，拖到右下角的生词本按钮。') : '暂时没有'}</p>`;
     $('#list').querySelectorAll('[data-word]').forEach(b => b.onclick = () => PTE.lookup(b.dataset.word));
     $('#list').querySelectorAll('[data-un]').forEach(b => b.onclick = () => { const s2 = PTE.srs(); delete s2[b.dataset.un].star; PTE.set('srs', s2); render(); });
   };
@@ -102,7 +104,7 @@ let tab = PTE.get('wbTab', 'star');
 
   // forgetting-curve explainer
   document.querySelector('details.tpl summary').innerHTML = `<span class="chip" style="background:var(--grad);color:#fff">${PTE.icon('chart')}</span>为什么这样安排复习？（遗忘曲线）`;
-  const W = 320, H = 150, days = 30, curves = [[1.2, '新学', '#FF6F91'], [2.5, '短期记忆', '#FFB020'], [9, '巩固中', '#3BA9FF'], [35, '已掌握', '#21C38E']];
+  const W = 320, H = 150, days = 30, curves = [[1.2, '新学', '#C46E55'], [2.5, '短期记忆', '#C8963A'], [9, '巩固中', '#4F7CAC'], [35, '已掌握', '#3C8A63']];
   const path = (S) => Array.from({ length: 61 }, (_, j) => { const x = j / 60 * days; return `${j ? 'L' : 'M'}${(x / days * (W - 30) + 30).toFixed(1)},${(10 + (1 - Math.exp(-x / S)) * (H - 30)).toFixed(1)}`; }).join('');
   $('#curve').innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto"><line x1="30" y1="${H - 20}" x2="${W}" y2="${H - 20}" stroke="var(--line)"/><line x1="30" y1="10" x2="30" y2="${H - 20}" stroke="var(--line)"/>
     <text x="0" y="16" font-size="9" fill="var(--mute)">100%</text><text x="6" y="${H - 22}" font-size="9" fill="var(--mute)">0%</text><text x="${W - 40}" y="${H - 6}" font-size="9" fill="var(--mute)">30 天</text>

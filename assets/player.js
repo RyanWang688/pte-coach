@@ -38,7 +38,7 @@
       else { state.playing = false; state.i = 0; paint(); PTE.toast('读完啦'); }
     };
     const pause = () => { state.playing = false; state.token++; speechSynthesis.cancel(); paint(); };
-    const api = { pause, play: speakFrom, state };
+    const api = { pause, play: speakFrom, state, bar };
 
     playBtn.onclick = () => state.playing ? pause() : speakFrom(state.i);
     bar.querySelector('[data-a=prev]').onclick = () => state.playing ? speakFrom(state.i - 1) : (state.i = Math.max(0, state.i - 1), paint());
