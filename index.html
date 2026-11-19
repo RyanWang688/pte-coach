@@ -7,7 +7,7 @@
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=10">
+<link rel="stylesheet" href="assets/style.css?v=11">
 </head>
 <body>
 <main>
@@ -35,8 +35,8 @@
     </aside>
   </div>
 </main>
-<script src="assets/core.js?v=10"></script>
-<script src="assets/drag.js?v=10"></script>
+<script src="assets/core.js?v=11"></script>
+<script src="assets/drag.js?v=11"></script>
 <script>
 PTE.nav('index.html');
 PTE.track('dashboard');
@@ -150,6 +150,7 @@ $('#settings').innerHTML = PTE.icon('gear') + ' 备份与往日任务';
       L.push(`WFD：${s.wfd.length} 句` + (s.wfd.length ? `，平均 ${avg(s.wfd)}%\n  最弱：\n    ${low(s.wfd)}` : ''));
       L.push(`RS：${s.rs.length} 句` + (s.rs.length ? `，平均 ${avg(s.rs)}%\n  最弱：\n    ${low(s.rs)}` : ''));
       L.push(`RA：${s.ra.length} 段` + (s.ra.length ? `，平均识别 ${avg(s.ra)}%` : ''));
+      if (s.bank && Object.keys(s.bank).length) L.push(`题库：${Object.entries(s.bank).map(([k, [n, a, b]]) => `${k.toUpperCase()} ${n} 题 ${b ? Math.round(a / b * 100) : 0}%`).join('，')}`);
       s.writing.forEach(w => L.push(`写作 ${w.type}（${w.words} 词，${w.mins} 分钟）：\n${w.text}`));
       const o = sh.querySelector('#other').value; if (o) L.push(`补充：${o}`);
       const out = sh.querySelector('#out'); out.textContent = L.join('\n'); out.classList.remove('hidden');

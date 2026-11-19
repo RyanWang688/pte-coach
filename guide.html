@@ -6,7 +6,7 @@
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=10">
+<link rel="stylesheet" href="assets/style.css?v=11">
 </head>
 <body>
 <main>
@@ -16,8 +16,8 @@
   <div id="list"></div>
   <p class="small mute center" style="margin-top:20px">题量和时间是大致范围，以 <a href="https://www.pearsonpte.com/pte-academic/test-format" target="_blank" rel="noopener">Pearson 官方说明</a>为准</p>
 </main>
-<script src="assets/core.js?v=10"></script>
-<script src="assets/drag.js?v=10"></script>
+<script src="assets/core.js?v=11"></script>
+<script src="assets/drag.js?v=11"></script>
 <script>
 PTE.nav('guide.html');
 PTE.track('guide');
@@ -27,13 +27,13 @@ const T = [
   ['speaking', 'Personal Introduction', '不计分', 1, '准备 25 秒 · 说 30 秒', '会发给院校，准备一段固定的自我介绍'],
   ['speaking', 'Read Aloud · RA', '★', '6–7', '准备 30–40 秒 · 读约 40 秒', '流利度和发音比内容更重要。读错了不要回读'],
   ['speaking', 'Repeat Sentence · RS', '★', '10–12', '答 15 秒', '计入口语和听力两项。按意群记忆，宁漏勿卡'],
-  ['speaking', 'Describe Image · DI', '★', '3–4', '准备 25 秒 · 说 40 秒', '套模板：主题 → 关键数据 → 趋势 → 结论'],
-  ['speaking', 'Re-tell Lecture · RL', '★', '1–2', '听约 90 秒 · 说 40 秒', '边听边记关键词，套模板串起来'],
+  ['speaking', 'Describe Image · DI', '★', '5–6', '准备 25 秒 · 说 40 秒', '套模板：主题 → 关键数据 → 趋势 → 结论'],
+  ['speaking', 'Re-tell Lecture · RL', '★', '2–3', '听约 90 秒 · 说 40 秒', '边听边记关键词，套模板串起来'],
   ['speaking', 'Answer Short Question', '', '5–6', '答 10 秒', '用一个词或几个词回答常识问题'],
-  ['speaking', 'Summarize Group Discussion', '新', '1–2', '作答约 2 分钟', '话题 → 每个人的观点 → 结论'],
-  ['speaking', 'Respond to a Situation', '新', '1–2', '准备约 20 秒 · 说约 40 秒', '礼貌开头 → 说明情况 → 提出方案 → 礼貌结束'],
+  ['speaking', 'Summarize Group Discussion', '新', '2–3', '听约 3 分钟 · 准备 10 秒 · 说 2 分钟', '话题 → 每个人的观点 → 结论'],
+  ['speaking', 'Respond to a Situation', '新', '2–3', '准备 10–20 秒 · 说 40 秒', '礼貌开头 → 说明情况 → 提出方案 → 礼貌结束'],
   ['speaking', 'Summarize Written Text · SWT', '', '1–2', '10 分钟', '只写一句话，5–75 词，只能有一个句号'],
-  ['speaking', 'Write Essay · WE', '★', 1, '20 分钟', '200–300 词，4 段：开头、两段主体、结尾'],
+  ['speaking', 'Write Essay · WE', '★', '1–2', '20 分钟', '200–300 词，4 段：开头、两段主体、结尾'],
   ['reading', 'R&W Fill in the Blanks', '★', '5–6', '', '下拉选词，考搭配和词性，计入阅读和写作两项'],
   ['reading', 'MC, Multiple Answers', '', '1–2', '', '选错会扣分。没把握就只选最确定的一个'],
   ['reading', 'Re-order Paragraphs', '', '2–3', '', '先找首句，再找代词和连接词相互呼应的句对'],
@@ -57,6 +57,8 @@ const TPL = [
   ['SST 讲座总结', 'The speaker discussed <u>topic</u>. He first explained that <u>point 1</u>. Moreover, <u>point 2</u>. Finally, he concluded that <u>point 3</u>.'],
   ['WE 议论文结构', '<b>开头</b>：背景 + 改写题目 + 表明立场<br><b>主体 1</b>：观点 → 解释 → For example …<br><b>主体 2</b>：另一面 → However …<br><b>结尾</b>：In conclusion, … 重申立场'],
 ];
+const BANKC = { 'speaking|Read Aloud': 'ra', 'speaking|Repeat Sentence': 'rs', 'speaking|Describe Image': 'di', 'speaking|Re-tell Lecture': 'rl', 'speaking|Answer Short Question': 'asq', 'speaking|Summarize Written Text': 'swt', 'speaking|Write Essay': 'we', 'reading|R&W Fill in the Blanks': 'rwfib', 'reading|MC, Multiple Answers': 'mcma', 'reading|Re-order Paragraphs': 'ro', 'reading|Reading Fill in the Blanks': 'rfib', 'reading|MC, Single Answer': 'mcsa', 'listening|Summarize Spoken Text': 'sst', 'listening|MC, Multiple Answers': 'lmcma', 'listening|Fill in the Blanks': 'lfib', 'listening|Highlight Correct Summary': 'hcs', 'listening|MC, Single Answer': 'lmcsa', 'listening|Select Missing Word': 'smw', 'listening|Highlight Incorrect Words': 'hiw', 'listening|Write from Dictation': 'wfd' };
+const bcode = (sec, nm) => BANKC[sec + '|' + nm.split(' · ')[0]];
 let cur = (location.hash || '#speaking').slice(1); if (!S[cur]) cur = 'speaking';
 const seg = document.getElementById('seg'), list = document.getElementById('list');
 const render = () => {
@@ -68,11 +70,12 @@ const render = () => {
     list.innerHTML = TPL.map(([t, b], i) => `<details class="tpl fadein" ${i === 0 ? 'open' : ''}><summary><span class="chip" style="background:${color};color:#fff">${PTE.icon('pen')}</span>${t}</summary><div class="body"><div class="tplt">${b}</div><div class="small mute" style="margin-top:6px">黄色部分换成题目里的内容</div></div></details>`).join('');
   } else if (cur === 'method') {
     PTE.load('data/plan.json').then(p => {
-      list.innerHTML = p.principles.map(([a, b], i) => `<div class="card tcard fadein" style="animation-delay:${i * 50}ms"><div class="ic" style="background:${['#2E4A7A', '#C46E55', '#4F7CAC', '#3C8A63', '#C8963A', '#D9774A'][i % 6]}">${PTE.icon(['redo', 'clock', 'book', 'list', 'target', 'chart'][i % 6])}</div><div><div class="nm">${a}</div><div class="small mute">${PTE.esc(b)}</div></div></div>`).join('');
+      list.innerHTML = p.principles.map(([a, b], i) => `<div class="card tcard fadein" style="animation-delay:${i * 50}ms"><div class="ic" style="background:${['#2E4A7A', '#C46E55', '#4F7CAC', '#3C8A63', '#C8963A', '#D9774A'][i % 6]}">${PTE.icon(['redo', 'clock', 'book', 'list', 'target', 'chart'][i % 6])}</div><div><div class="nm">${a}</div><div class="small mute">${PTE.esc(b)}</div></div></div>`).join('') +
+        `<div class="card fadein" style="grid-column:1/-1"><div class="nm" style="font-weight:600">参考来源</div><div class="small" style="color:var(--ink2);line-height:1.8;margin-top:6px">${p.sources.map(([n, u, d]) => `<div><a href="${u}" target="_blank" rel="noopener">${PTE.esc(n)}</a> · ${PTE.esc(d)}</div>`).join('')}</div></div>`;
     });
   } else {
     list.innerHTML = T.filter(t => t[0] === cur).map(([, nm, tag, n, time, how], i) => `<div class="card tcard fadein" style="animation-delay:${i * 40}ms"><div class="ic" style="background:${tag === '★' ? color : 'var(--line)'};color:${tag === '★' ? '#fff' : 'var(--mute)'}">${PTE.icon(tag === '★' ? 'spark' : icon)}</div>
-      <div class="grow"><div class="nm">${nm}</div><div class="tags">${tag === '★' ? '<span class="chip star">★ 高分重点</span>' : tag ? `<span class="chip">${tag}</span>` : ''}<span class="chip">${n} 题</span>${time ? `<span class="chip">${PTE.icon('clock')} ${time}</span>` : ''}</div><div class="small">${how}</div></div></div>`).join('');
+      <div class="grow"><div class="nm">${nm}</div><div class="tags">${tag === '★' ? '<span class="chip star">★ 高分重点</span>' : tag ? `<span class="chip">${tag}</span>` : ''}<span class="chip">${n} 题</span>${time ? `<span class="chip">${PTE.icon('clock')} ${time}</span>` : ''}</div><div class="small">${how}</div>${bcode(cur, nm) ? `<a class="small" style="display:inline-flex;align-items:center;gap:4px;margin-top:8px;font-weight:600" href="bank.html#${bcode(cur, nm)}">去题库练这个题型 ${PTE.icon('arrow')}</a>` : ''}</div></div>`).join('');
   }
 };
 render();

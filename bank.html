@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>题库 · PTE Rise</title>
+<link rel="icon" href="assets/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=11">
+<style>
+.bk-types{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:22px}
+.bk-type{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:500;color:var(--ink)}
+.bk-type:hover{border-color:var(--pri);background:var(--card)}
+.bk-type.on{border-color:var(--pri);box-shadow:inset 0 0 0 1px var(--pri);background:var(--pri-soft)}
+.bk-type b{font-size:.92rem}.bk-type span{font-size:.75rem;color:var(--mute)}
+.bk-type .bar{width:100%;height:3px;border-radius:3px;background:var(--bg2);margin-top:6px;overflow:hidden}.bk-type .bar i{display:block;height:100%;background:var(--ok)}
+.bk-part{font:600 .78rem var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:4px 0 8px}
+.bk-q{font:400 1.08rem/1.85 var(--serif);color:var(--ink)}
+.bk-q select{font:inherit;font-size:.95rem;padding:2px 6px;border-radius:6px;border:1px solid var(--line2);background:var(--pri-soft);color:var(--ink)}
+.bk-q select.r{border-color:var(--ok);background:var(--okbg)}.bk-q select.wr{border-color:var(--bad);background:var(--badbg)}
+.bk-bank{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.bk-bank button{background:var(--card);border:1px dashed var(--line2);font-weight:500;padding:6px 12px}
+.bk-bank button.used{opacity:.35}
+.bk-ro{list-style:none;padding:0;margin:0;counter-reset:ro}
+.bk-ro li{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:12px 14px;margin:8px 0;line-height:1.6}
+.bk-ro li .lab{font-weight:700;color:var(--pri);flex:none;width:1.4em}
+.bk-ro li .mv{display:flex;flex-direction:column;gap:4px;flex:none}
+.bk-ro li .mv button{padding:2px 8px;font-size:.8rem}
+.bk-ro li.r{border-color:var(--ok);background:var(--okbg)}
+.bk-hiw span{cursor:pointer;border-radius:4px;padding:0 2px}.bk-hiw span:hover{background:var(--pri-soft)}
+.bk-hiw span.sel{background:var(--hl)}.bk-hiw span.r{background:var(--okbg);color:var(--ok)}.bk-hiw span.wr{background:var(--badbg);color:var(--bad);text-decoration:line-through}.bk-hiw span.miss{outline:2px solid var(--ok)}
+.bk-ex{border-top:1px solid var(--line);margin-top:22px;padding-top:18px}
+.bk-ex h4{margin:16px 0 6px;font-size:.9rem;color:var(--ink)}
+.bk-ex .lst{margin:0;padding-left:18px;line-height:1.85;color:var(--ink2);font-size:.93rem}
+.bk-ex .en{font-size:.85rem;color:var(--mute);margin-top:8px;line-height:1.7}
+.bk-score{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:12px;background:var(--bg);margin-top:18px}
+.bk-score b{font:600 1.6rem var(--serif)}
+.bk-rub{width:100%;border-collapse:collapse;font-size:.88rem;margin-top:8px}.bk-rub td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}.bk-rub td:last-child{text-align:right;white-space:nowrap;font-weight:600}
+.bk-nav{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.bk-model{font:400 1rem/1.8 var(--serif);background:var(--bg);border-radius:12px;padding:12px 16px;color:var(--ink2)}
+.bk-audio{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--bg);margin-bottom:16px}
+textarea.bk-ta{min-height:150px;font:400 1rem/1.7 var(--sans)}
+.bk-wc{font-size:.8rem;color:var(--mute);text-align:right;margin-top:4px}
+.bk-chart svg{width:100%;height:auto;display:block}
+@media (max-width:760px){.bk-types{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<main>
+  <div class="pagehead"><div class="grow"><div class="eyebrow">Question bank · 21 task types</div><h1 style="margin-top:10px">题库</h1><p>按官方格式、计时和评分规则练习。每道题提交后都有中文解析。</p></div>
+    <div class="seg" id="mode" style="margin:0"></div></div>
+  <div id="types"></div>
+  <div class="dash">
+    <div id="pane"></div>
+    <aside id="side"></aside>
+  </div>
+</main>
+<script src="assets/core.js?v=11"></script>
+<script src="assets/drag.js?v=11"></script>
+<script src="assets/lookup.js?v=11"></script>
+<script>
+PTE.nav('bank.html');
+const $ = (s, el = document) => el.querySelector(s);
+const esc = PTE.esc;
+// Official format + scoring rules (Pearson Score Guide, summarised in pte-full-practice/pte-exam.md)
+const T = {
+  ra:   { part: 1, n: 'Read Aloud', cn: '朗读', prep: 35, rec: 40, skills: '口语 + 阅读', rule: '内容 0–3（漏读、错读、多读各算 1 处错）+ 流利度 0–5 + 发音 0–5，满分 13。内容 0 分时整题 0 分。' },
+  rs:   { part: 1, n: 'Repeat Sentence', cn: '复述句子', rec: 15, skills: '口语 + 听力', rule: '内容：全对 3 分，≥50% 词按顺序复述 2 分，<50% 1 分；另有流利度 0–5、发音 0–5，满分 13。录音只放一次。' },
+  di:   { part: 1, n: 'Describe Image', cn: '描述图片', prep: 25, rec: 40, skills: '口语', rule: '内容 0–5（所有要素 + 关键数据 + 结论）+ 流利度 0–5 + 发音 0–5，满分 15。只套模板、没有图中数据，内容记 0 分。' },
+  rl:   { part: 1, n: 'Re-tell Lecture', cn: '复述讲座', prep: 10, rec: 40, skills: '口语 + 听力', rule: '内容 0–5（主旨、主要细节、关系、结论）+ 流利度 0–5 + 发音 0–5，满分 15。允许边听边记笔记。' },
+  asq:  { part: 1, n: 'Answer Short Question', cn: '简短回答', rec: 10, skills: '听力', rule: '答对 1 分，答错 0 分。录音结束后没有提示音，麦克风直接打开。' },
+  swt:  { part: 1, n: 'Summarize Written Text', cn: '一句话总结', time: 600, words: [5, 75], skills: '写作 + 阅读', rule: '内容 0–2 + 形式 0–1（必须是一句话、5–75 词）+ 语法 0–2 + 词汇 0–2，满分 7。内容或形式为 0，整题 0 分。' },
+  we:   { part: 1, n: 'Write Essay', cn: '议论文', time: 1200, words: [200, 300], skills: '写作', rule: '内容 0–3、形式 0–2（200–300 词）、结构连贯 0–2、语法 0–2、语言范围 0–2、词汇 0–2、拼写 0–2，满分 15。少于 120 或多于 380 词整题 0 分。' },
+  rwfib:{ part: 2, n: 'R&W: Fill in the Blanks', cn: '阅读写作填空（下拉）', skills: '阅读 + 写作', rule: '每空 1 分。阅读部分共用一个总计时（约 23–30 分钟），每题建议 2 分钟以内。' },
+  mcma: { part: 2, n: 'Multiple Choice, Multiple Answers', cn: '阅读多选', skills: '阅读', rule: '选对一个 +1，选错一个 −1，最低 0 分。没把握的选项不要选。' },
+  ro:   { part: 2, n: 'Re-order Paragraphs', cn: '段落排序', skills: '阅读', rule: '每一对相邻顺序正确得 1 分，N 段最多 N−1 分。' },
+  rfib: { part: 2, n: 'Reading: Fill in the Blanks', cn: '阅读填空（拖拽）', skills: '阅读', rule: '每空 1 分。词库里的词比空格多，有干扰项。' },
+  mcsa: { part: 2, n: 'Multiple Choice, Single Answer', cn: '阅读单选', skills: '阅读', rule: '答对 1 分，答错 0 分。' },
+  sst:  { part: 3, n: 'Summarize Spoken Text', cn: '听力总结', time: 600, words: [50, 70], skills: '写作 + 听力', rule: '内容 0–2、形式 0–2（50–70 词）、语法 0–2、词汇 0–2、拼写 0–2，满分 10。少于 40 或多于 100 词整题 0 分。' },
+  lmcma:{ part: 3, n: 'Listening: MC, Multiple Answers', cn: '听力多选', skills: '听力', rule: '选对一个 +1，选错一个 −1，最低 0 分。' },
+  lfib: { part: 3, n: 'Listening: Fill in the Blanks', cn: '听力填空', skills: '听力 + 写作', rule: '每个拼写正确的词 1 分，拼错不得分。' },
+  hcs:  { part: 3, n: 'Highlight Correct Summary', cn: '选择正确总结', skills: '听力 + 阅读', rule: '答对 1 分，答错 0 分。' },
+  lmcsa:{ part: 3, n: 'Listening: MC, Single Answer', cn: '听力单选', skills: '听力', rule: '答对 1 分，答错 0 分。' },
+  smw:  { part: 3, n: 'Select Missing Word', cn: '选择缺失词', skills: '听力', rule: '答对 1 分，答错 0 分。录音最后一个词被“哔”声替换。' },
+  hmw:  { part: 3, n: 'Listening: Select Missing Words', cn: '听力选词填空', skills: '听力', rule: '每空 1 分。（这是开源题库的扩展练习题型，帮助训练边听边判断。）' },
+  hiw:  { part: 3, n: 'Highlight Incorrect Words', cn: '找出错词', skills: '听力 + 阅读', rule: '点对一个错词 +1，点错一个正确的词 −1，最低 0 分。' },
+  wfd:  { part: 3, n: 'Write from Dictation', cn: '听写句子', skills: '听力 + 写作', rule: '每拼对一个词 1 分，不看词序，多写的词不扣分。考试只播一次。' },
+};
+const PARTS = { 1: 'Part 1 · 口语与写作', 2: 'Part 2 · 阅读', 3: 'Part 3 · 听力' };
+let BANK, cur = (location.hash || '#wfd').slice(1), idx = 0, mode = PTE.get('bankMode', 'practice');
+if (!T[cur]) cur = 'wfd';
+const hist = () => PTE.get('bank', {});
+const record = (it, s, m) => { const h = hist(); (h[it.id] = h[it.id] || []).push([PTE.today(), s, m]); PTE.set('bank', h); PTE.updateStats(st => { st.bank = st.bank || {}; const b = st.bank[it.type] = st.bank[it.type] || [0, 0, 0]; b[0]++; b[1] += s; b[2] += m; }); };
+const typeStat = (t) => { const h = hist(); const items = BANK.items.filter(i => i.type === t); let done = 0, s = 0, m = 0; items.forEach(i => { const a = h[i.id]; if (a) { done++; const l = a[a.length - 1]; s += l[1]; m += l[2]; } }); return { n: items.length, done, pct: m ? s / m : null }; };
+const wc = (s) => (s.trim().match(/[A-Za-z0-9'’-]+/g) || []).length;
+let stopper = () => {};
+const stopAll = () => { stopper(); stopper = () => {}; speechSynthesis.cancel(); PTE._stopListen && PTE._stopListen(); };
+
+(async () => {
+  BANK = await PTE.load('data/bank.json');
+  renderMode(); renderTypes(); pick(); render();
+})();
+PTE.track(() => 'bank');
+
+function renderMode() {
+  $('#mode').innerHTML = [['practice', '练习模式', 'book'], ['exam', '考试模式', 'clock']].map(([k, n, i]) => `<button class="${k === mode ? 'on' : ''}" data-m="${k}">${PTE.icon(i)} ${n}</button>`).join('');
+  $('#mode').querySelectorAll('button').forEach(b => b.onclick = () => { mode = b.dataset.m; PTE.set('bankMode', mode); renderMode(); render(); });
+}
+function renderTypes() {
+  $('#types').innerHTML = [1, 2, 3].map(p => `<div class="bk-part">${PARTS[p]}</div><div class="bk-types">${Object.entries(T).filter(([, v]) => v.part === p).map(([k, v]) => { const s = typeStat(k); return `<button class="bk-type ${k === cur ? 'on' : ''}" data-t="${k}"><b>${k.toUpperCase()} · ${v.cn}</b><span>${s.done}/${s.n} 题${s.pct !== null ? ` · 平均 ${Math.round(s.pct * 100)}%` : ''}</span><div class="bar"><i style="width:${s.n ? s.done / s.n * 100 : 0}%"></i></div></button>`; }).join('')}</div>`).join('');
+  $('#types').querySelectorAll('[data-t]').forEach(b => b.onclick = () => { cur = b.dataset.t; history.replaceState(null, '', '#' + cur); pick(); renderTypes(); render(); $('#pane').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+}
+const list = () => BANK.items.filter(i => i.type === cur);
+function pick() { const h = hist(); const l = list(); const j = l.findIndex(i => !h[i.id]); idx = j >= 0 ? j : 0; }
+
+function side() {
+  const t = T[cur], s = typeStat(cur), it = list()[idx];
+  const src = it && BANK.sources.find(x => x.id === it.src);
+  $('#side').innerHTML = `<div class="card"><div class="eyebrow">${t.n}</div><div style="font:600 1.15rem/1.4 var(--serif);margin:8px 0 6px">${t.cn}</div>
+    <div class="row" style="gap:6px"><span class="chip">${PTE.icon('target')} ${t.skills}</span>${t.prep ? `<span class="chip">${PTE.icon('clock')} 准备 ${t.prep}s</span>` : ''}${t.rec ? `<span class="chip">${PTE.icon('mic')} 作答 ${t.rec}s</span>` : ''}${t.time ? `<span class="chip">${PTE.icon('clock')} ${t.time / 60} 分钟</span>` : ''}${t.words ? `<span class="chip">${PTE.icon('pen')} ${t.words[0]}–${t.words[1]} 词</span>` : ''}</div>
+    <p class="small" style="line-height:1.75;color:var(--ink2);margin:12px 0 0"><b style="color:var(--ink)">官方评分：</b>${t.rule}</p></div>
+    <div class="card"><div class="row"><b class="grow">本题型进度</b><span class="small mute">${s.done} / ${s.n}</span></div><div class="prog" style="margin:10px 0"><i style="width:${s.n ? s.done / s.n * 100 : 0}%"></i></div><div class="small mute">${s.pct === null ? '还没有做过' : `最近一次平均得分 ${Math.round(s.pct * 100)}%`}</div></div>
+    <div class="card small" style="color:var(--ink2);line-height:1.7"><b style="color:var(--ink)">${mode === 'exam' ? '考试模式' : '练习模式'}</b><div style="margin-top:6px">${mode === 'exam' ? '录音只播一次，按官方时间倒计时，提交后才能看原文和解析。' : '可以重听、看原文，不限时。适合刚学这个题型时用。'}</div></div>
+    ${src ? `<div class="card small" style="color:var(--mute);line-height:1.7">题目来源：<a href="${src.url}" target="_blank" rel="noopener">${esc(src.name)}</a>（${esc(src.license)}），开源练习题，非 Pearson 官方真题。中文解析由教练编写。</div>` : ''}`;
+}
+
+function render() {
+  stopAll(); side();
+  const l = list(); const it = l[idx]; const el = $('#pane');
+  if (!it) { el.innerHTML = '<div class="card">这个题型暂时没有题目。</div>'; return; }
+  const h = hist()[it.id];
+  el.innerHTML = `<div class="bk-nav"><button class="sm ghost" id="prev" ${idx ? '' : 'disabled'}>${PTE.icon('arrow')} 上一题</button><span class="small mute">${cur.toUpperCase()} 第 ${idx + 1} / ${l.length} 题${h ? ` · 已做 ${h.length} 次，上次 ${h[h.length - 1][1]}/${h[h.length - 1][2]}` : ''}</span><button class="sm ghost" id="nextq" ${idx < l.length - 1 ? '' : 'disabled'}>下一题 ${PTE.icon('arrow')}</button></div><div class="card" id="q"></div>`;
+  $('#prev').firstElementChild && ($('#prev').firstElementChild.style.transform = 'rotate(180deg)');
+  $('#prev').onclick = () => { idx--; render(); }; $('#nextq').onclick = () => { idx++; render(); };
+  (R[RTYPE[cur] || cur])($('#q'), it);
+}
+const RTYPE = { mcma: 'choice', mcsa: 'choice', lmcma: 'choice', lmcsa: 'choice', hcs: 'choice', smw: 'choice', rwfib: 'fib', rfib: 'fib', lfib: 'fib', hmw: 'fib', rl: 'speak', di: 'speak', ra: 'speak', swt: 'write', we: 'write', sst: 'write' };
+
+/* ---------- shared pieces ---------- */
+const isListen = () => T[cur].part === 3 || ['rs', 'rl', 'asq'].includes(cur);
+function audioBox(el, it, opts = {}) {
+  const box = document.createElement('div'); box.className = 'bk-audio';
+  box.innerHTML = `<button class="round pri" data-play aria-label="播放">${PTE.icon('play')}</button><div class="grow"><b class="small" data-st>${mode === 'exam' ? '录音会自动播放一次' : '点击播放录音'}</b><div class="small mute" data-sub>${mode === 'exam' ? '考试模式：不能暂停或重听' : '练习模式：可以重听'}</div></div>${mode === 'practice' && !opts.noScript ? `<button class="sm ghost" data-script>${PTE.icon('eye')} 原文</button>` : ''}`;
+  el.prepend(box);
+  let plays = 0;
+  const play = async () => {
+    if (mode === 'exam' && plays) return; plays++;
+    const b = $('[data-play]', box); b.disabled = true; $('[data-st]', box).textContent = '播放中…';
+    await PTE.speak(it.audio);
+    $('[data-st]', box).textContent = mode === 'exam' ? '播放结束' : '播放结束，可以重听';
+    b.disabled = mode === 'exam'; opts.onEnd && opts.onEnd();
+  };
+  $('[data-play]', box).onclick = play;
+  const sc = $('[data-script]', box); if (sc) sc.onclick = () => { let p = $('.bk-script', el); if (p) return p.remove(); box.insertAdjacentHTML('afterend', `<div class="bk-script bk-model" style="margin-bottom:14px">${esc(it.audio)}</div>`); PTE.clickable($('.bk-script', el)); };
+  if (mode === 'exam' && opts.auto !== false) setTimeout(play, 600);
+  return play;
+}
+function scoreBox(s, m, note) {
+  const pct = m ? s / m : 0; const c = pct >= .8 ? 'var(--ok)' : pct >= .5 ? 'var(--sun)' : 'var(--coral)';
+  return `<div class="bk-score"><span style="color:${c}">${PTE.icon(pct >= .8 ? 'trophy' : pct >= .5 ? 'check' : 'flag')}</span><b style="color:${c}">${s} / ${m}</b><span class="small" style="color:var(--ink2)">${note || ''}</span></div>`;
+}
+function explain(it, extra = '') {
+  const z = it.zh; let h = '<div class="bk-ex"><div class="eyebrow">解析</div>';
+  if (z) {
+    h += `<h4>考点</h4><div class="small" style="color:var(--ink2)">${esc(z.p)}</div><h4>答案与依据</h4><div style="line-height:1.85;color:var(--ink2);font-size:.95rem">${esc(z.a)}</div>`;
+    if (z.o && z.o.length) h += `<h4>${['fib'].includes(RTYPE[cur]) ? '逐空解析' : cur === 'ro' ? '逐句解析' : '逐项解析'}</h4><ul class="lst">${z.o.map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
+    if (z.t) h += `<h4>技巧</h4><div class="why" style="animation:none">${esc(z.t)}</div>`;
+  }
+  h += extra;
+  if (it.en && typeof it.en === 'object') h += `<div class="en"><b>原题英文解析：</b>${Object.entries(it.en).map(([k, v]) => `${isNaN(k) ? '' : 'ABCDEFG'[k] + ': '}${esc(v)}`).join('<br>')}</div>`;
+  return h + `<div class="row" style="margin-top:18px;gap:8px"><button class="sm" data-retry>${PTE.icon('redo')} 再做一次</button>${idx < list().length - 1 ? `<button class="sm pri" data-next>下一题 ${PTE.icon('arrow')}</button>` : ''}</div></div>`;
+}
+function wireEx(el) { const r = $('[data-retry]', el); if (r) r.onclick = render; const n = $('[data-next]', el); if (n) n.onclick = () => { idx++; render(); }; PTE.clickable(el.querySelector('.bk-ex')); renderTypes(); side(); }
+// auto analysis for sentence-level listening items
+const STOP = new Set('the a an of to in on at for and or but is are was were be been will would can could must should may might has have had do does did by with from as that this these those it its their there which who whom than then also not no all any each every some into onto about over under after before during through between within without'.split(' '));
+function chunks(s) { return s.replace(/([,;:])\s*/g, '$1|').replace(/\s+(because|although|while|which|that|who|when|before|after|during|until|unless|if|since|whereas|but|and so)\s+/gi, '|$1 ').replace(/\s+(in|on|at|for|to|from|with|by|through|during|throughout|before|after)\s+(the|a|an|their|its|our|your|his|her|this|these|all|every|each|five|ten|noon|midnight|[A-Z]\w*)\b/g, '|$1 $2').split('|').map(x => x.trim()).filter(Boolean); }
+function sentenceAnalysis(text) {
+  const ws = text.match(/[A-Za-z'’-]+/g) || [];
+  const keys = [...new Set(ws.filter(w => w.length > 3 && !STOP.has(w.toLowerCase())))];
+  const traps = [];
+  ws.forEach(w => { const l = w.toLowerCase(); if (/[^s]s$/.test(l) && l.length > 4 && !/ss$|us$|is$/.test(l)) traps.push(`${w}（复数 / 三单 -s）`); else if (/ed$/.test(l) && l.length > 4) traps.push(`${w}（-ed 结尾）`); });
+  ['the', 'a', 'an'].forEach(a => { const n = ws.filter(w => w.toLowerCase() === a).length; if (n) traps.push(`冠词 ${a} × ${n}`); });
+  return `<h4>意群切分（按这个节奏记）</h4><div class="bk-model">${chunks(text).map(c => esc(c)).join(' <span style="color:var(--acc)">/</span> ')}</div>
+    <h4>先抓住的实词</h4><div class="row" style="gap:6px">${keys.map(k => `<span class="chip w">${esc(k)}</span>`).join('')}</div>
+    ${traps.length ? `<h4>最容易漏的细节</h4><ul class="lst">${[...new Set(traps)].slice(0, 8).map(t => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
+    <h4>技巧</h4><div class="why" style="animation:none">${cur === 'wfd' ? '先写下骨架（主语 + 动词 + 关键名词），再补冠词、介词和词尾。评分只看拼对的词，不看顺序，所以写不全也要尽量多写对的词。' : '听的时候在脑子里按意群切成 3–4 块，复述时保持语速稳定，漏词也不要停顿或重来，流利度比完整更重要。'}</div>`;
+}
+
+/* ---------- renderers ---------- */
+const R = {};
+R.choice = (el, it) => {
+  const multi = ['mcma', 'lmcma'].includes(cur);
+  el.innerHTML = `${it.title ? `<div class="eyebrow">${esc(it.title)}</div>` : ''}${it.text ? `<div class="bk-q" style="margin:10px 0 18px">${esc(it.text)}</div>` : ''}<b style="display:block;margin:6px 0 4px">${esc(it.question || '')}</b><div class="small mute">${multi ? '多选：可以选多个，选错会倒扣分' : '单选'}</div><div id="opts">${it.options.map((o, j) => `<button class="opt" data-j="${j}"><b style="margin-right:10px;color:var(--pri)">${'ABCDEFG'[j]}</b>${esc(o)}</button>`).join('')}</div><button class="pri" id="sub" style="margin-top:10px">${PTE.icon('check')} 提交</button><div id="ex"></div>`;
+  if (it.audio) audioBox(el, it, { noScript: false });
+  const sel = new Set();
+  el.querySelectorAll('.opt').forEach(b => b.onclick = () => { const j = +b.dataset.j; if (!multi) { sel.clear(); el.querySelectorAll('.opt').forEach(x => x.style.borderColor = ''); } sel.has(j) ? sel.delete(j) : sel.add(j); el.querySelectorAll('.opt').forEach(x => { const on = sel.has(+x.dataset.j); x.style.borderColor = on ? 'var(--pri)' : ''; x.style.background = on ? 'var(--pri-soft)' : ''; }); });
+  $('#sub', el).onclick = () => {
+    if (!sel.size) return PTE.toast('先选一个答案');
+    const ans = new Set(it.answer); let s, m;
+    if (multi) { s = Math.max(0, [...sel].filter(j => ans.has(j)).length - [...sel].filter(j => !ans.has(j)).length); m = ans.size; } else { s = ans.has([...sel][0]) ? 1 : 0; m = 1; }
+    el.querySelectorAll('.opt').forEach(x => { const j = +x.dataset.j; x.disabled = true; x.style.background = ''; x.style.borderColor = ''; if (ans.has(j)) x.classList.add('right'); else if (sel.has(j)) x.classList.add('wrong'); });
+    $('#sub', el).remove(); record(it, s, m);
+    $('#ex', el).innerHTML = scoreBox(s, m, multi ? `正确答案 ${[...ans].map(j => 'ABCDEFG'[j]).join('、')}；选对 +1，选错 −1` : `正确答案 ${'ABCDEFG'[it.answer[0]]}`) + explain(it, it.audio && mode === 'exam' ? `<h4>录音原文</h4><div class="bk-model">${esc(it.audio)}</div>` : '');
+    wireEx(el);
+  };
+};
+R.fib = (el, it) => {
+  const drag = cur === 'rfib' && it.bank, sel = !!it.opts;
+  let html = it.segs.map(s => typeof s === 'string' ? esc(s) : sel ? `<select data-b="${s.b}"><option value="">———</option>${it.opts[s.b].map(o => `<option>${esc(o)}</option>`).join('')}</select>` : `<input class="blank" data-b="${s.b}" autocomplete="off" autocapitalize="off" spellcheck="false" ${drag ? 'readonly placeholder="点词库填入"' : ''}>`).join('');
+  el.innerHTML = `${it.title ? `<div class="eyebrow">${esc(it.title)}</div>` : ''}<div class="bk-q" style="margin-top:10px">${html}</div>${drag ? `<div class="bk-bank">${it.bank.map(w => `<button data-w="${esc(w)}">${esc(w)}</button>`).join('')}</div><div class="small mute" style="margin-top:6px">点一个空格选中它，再点词库里的词填入；点已填的空格可清空。</div>` : ''}<button class="pri" id="sub" style="margin-top:16px">${PTE.icon('check')} 提交</button><div id="ex"></div>`;
+  if (it.audio) audioBox(el, it, { noScript: true });
+  const blanks = [...el.querySelectorAll('[data-b]')];
+  if (drag) {
+    let target = blanks[0];
+    const mark = () => { blanks.forEach(b => b.style.outline = b === target ? '2px solid var(--pri)' : ''); el.querySelectorAll('.bk-bank button').forEach(x => x.classList.toggle('used', blanks.some(b => b.value === x.dataset.w))); };
+    blanks.forEach(b => b.onclick = () => { if (b.value) b.value = ''; target = b; mark(); });
+    el.querySelectorAll('.bk-bank button').forEach(x => x.onclick = () => { if (!target) target = blanks.find(b => !b.value); if (!target) return; blanks.forEach(b => { if (b.value === x.dataset.w) b.value = ''; }); target.value = x.dataset.w; target = blanks.find(b => !b.value) || null; mark(); });
+    mark();
+  } else if (!sel) blanks.forEach((b, j) => b.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); (blanks[j + 1] || $('#sub', el)).focus(); } });
+  const norm = (s) => s.trim().toLowerCase().replace(/[’]/g, "'").replace(/[.,]$/, '');
+  $('#sub', el).onclick = () => {
+    let s = 0; blanks.forEach(b => { const ok = it.answer[+b.dataset.b].some(a => norm(a) === norm(b.value)); if (ok) s++; b.classList.add(ok ? 'r' : 'wr'); b.disabled = true; });
+    const m = blanks.length; $('#sub', el).remove(); record(it, s, m);
+    $('#ex', el).innerHTML = scoreBox(s, m, '正确答案：' + it.answer.map(a => a[0]).join(' / ')) + explain(it, it.audio ? `<h4>录音原文</h4><div class="bk-model">${esc(it.audio)}</div>` : '');
+    wireEx(el);
+  };
+};
+R.ro = (el, it) => {
+  const L = 'ABCDEFGH'; let order = it.paras.map((_, j) => j);
+  do { order = order.map(x => [Math.random(), x]).sort((a, b) => a[0] - b[0]).map(x => x[1]); } while (order.every((x, j) => L[x] === it.seq[j]) && order.length > 1);
+  const draw = (done) => { $('#ro', el).innerHTML = order.map((j, k) => `<li class="${done && L[j] === it.seq[k] ? 'r' : ''}"><span class="lab">${L[j]}</span><span class="grow">${esc(it.paras[j])}</span>${done ? '' : `<span class="mv"><button class="ghost" data-up="${k}" ${k ? '' : 'disabled'}>↑</button><button class="ghost" data-dn="${k}" ${k < order.length - 1 ? '' : 'disabled'}>↓</button></span>`}</li>`).join('');
+    el.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const k = +b.dataset.up; [order[k - 1], order[k]] = [order[k], order[k - 1]]; draw(); });
+    el.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => { const k = +b.dataset.dn; [order[k + 1], order[k]] = [order[k], order[k + 1]]; draw(); }); };
+  el.innerHTML = `<div class="small mute">用 ↑ ↓ 把段落排成正确顺序。</div><ol class="bk-ro" id="ro"></ol><button class="pri" id="sub" style="margin-top:10px">${PTE.icon('check')} 提交</button><div id="ex"></div>`;
+  draw();
+  $('#sub', el).onclick = () => {
+    const mine = order.map(j => L[j]); const pairs = new Set(it.seq.slice(1).map((x, k) => it.seq[k] + x));
+    const s = mine.slice(1).filter((x, k) => pairs.has(mine[k] + x)).length, m = it.seq.length - 1;
+    draw(true); $('#sub', el).remove(); record(it, s, m);
+    $('#ex', el).innerHTML = scoreBox(s, m, `你的顺序 ${mine.join('→')}；正确顺序 ${it.seq.join('→')}`) + explain(it); wireEx(el);
+  };
+};
+R.hiw = (el, it) => {
+  const shown = it.display.split(/\s+/), said = it.audio.split(/\s+/);
+  const n = (w) => w.toLowerCase().replace(/[^a-z0-9']/g, '');
+  const wrongIdx = new Set(shown.map((w, j) => n(w) !== n(said[j] || '') ? j : -1).filter(j => j >= 0));
+  el.innerHTML = `<div class="small mute">边听边点出和录音不一样的词。</div><div class="bk-q bk-hiw" style="margin-top:10px">${shown.map((w, j) => `<span data-j="${j}">${esc(w)}</span>`).join(' ')}</div><button class="pri" id="sub" style="margin-top:16px">${PTE.icon('check')} 提交</button><div id="ex"></div>`;
+  audioBox(el, it, { noScript: true });
+  const sel = new Set(); el.querySelectorAll('.bk-hiw span').forEach(sp => sp.onclick = () => { const j = +sp.dataset.j; sel.has(j) ? sel.delete(j) : sel.add(j); sp.classList.toggle('sel'); });
+  $('#sub', el).onclick = () => {
+    const hit = [...sel].filter(j => wrongIdx.has(j)).length, miss = [...sel].filter(j => !wrongIdx.has(j)).length;
+    const s = Math.max(0, hit - miss), m = wrongIdx.size;
+    el.querySelectorAll('.bk-hiw span').forEach(sp => { const j = +sp.dataset.j; sp.onclick = null; sp.classList.remove('sel'); if (sel.has(j)) sp.classList.add(wrongIdx.has(j) ? 'r' : 'wr'); else if (wrongIdx.has(j)) sp.classList.add('miss'); });
+    $('#sub', el).remove(); record(it, s, m);
+    $('#ex', el).innerHTML = scoreBox(s, m, `点对 ${hit} 个，误点 ${miss} 个（每误点一个扣 1 分）；带框的是漏掉的错词`) + explain(it, `<h4>录音原文</h4><div class="bk-model">${esc(it.audio)}</div>`); wireEx(el);
+  };
+};
+R.wfd = (el, it) => {
+  el.innerHTML = `<textarea id="ans" style="min-height:90px;font-size:1.1rem" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="写下你听到的整句话，回车提交"></textarea><button class="pri" id="sub" style="margin-top:12px">${PTE.icon('check')} 提交</button><div id="ex"></div>`;
+  audioBox(el, it, { noScript: true, onEnd: () => $('#ans', el) && $('#ans', el).focus() });
+  const go = () => {
+    const a = $('#ans', el).value; if (!a.trim()) return PTE.toast('先写下你听到的内容');
+    const r = PTE.wordScore(it.text, a); $('#sub', el).remove(); $('#ans', el).disabled = true; record(it, r.score, r.total);
+    $('#ex', el).innerHTML = scoreBox(r.score, r.total, '每拼对一个词 1 分，不看顺序') + `<div class="diff" style="font-size:1.1rem;line-height:2;margin-top:14px">${r.words.map((w, i) => `<span class="${r.marks[i] ? 'm' : 'x'}">${esc(w)}</span>`).join(' ')}</div>` + explain(it, sentenceAnalysis(it.text)); wireEx(el);
+  };
+  $('#sub', el).onclick = go; $('#ans', el).onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); go(); } };
+};
+// speaking: rs / asq use one recognition window; ra / di / rl use prep + record clocks
+async function recordFor(el, secs, onDone) {
+  const st = $('#st', el), live = $('#live', el);
+  st.innerHTML = `<span class="bad">${PTE.icon('mic')} 录音中，最多 ${secs} 秒（停顿超过 3 秒会自动结束）</span>`;
+  const said = PTE.canRecognize ? await PTE.listen(secs * 1000, t => live.textContent = t) : null;
+  if (said === null) { st.textContent = '这个浏览器不支持语音识别，请用 Chrome 或 Edge；也可以在下面自己打出你说的内容。'; live.innerHTML = '<textarea id="typed" style="min-height:70px;margin-top:8px" placeholder="把你说的内容打在这里"></textarea><button class="sm" id="tdone" style="margin-top:8px">完成</button>'; $('#tdone', el).onclick = () => onDone($('#typed', el).value); return; }
+  st.textContent = '录音结束'; onDone(said || '');
+}
+R.rs = (el, it) => {
+  el.innerHTML = `<div class="stage" style="padding:10px 0"><div class="status" id="st">${mode === 'exam' ? '录音播放后立刻开始复述' : '点击播放，听完后开始复述'}</div><div id="live" class="mute" style="min-height:1.6em;margin-top:8px"></div></div><div id="ex"></div>`;
+  audioBox(el, it, { noScript: true, onEnd: () => { if ($('#ex', el).innerHTML) return; recordFor(el, 15, said => {
+    const r = PTE.wordScore(it.text, said); const pct = r.total ? r.score / r.total : 0; const c = pct === 1 ? 3 : pct >= .5 ? 2 : pct > 0 ? 1 : 0; record(it, c, 3);
+    $('#ex', el).innerHTML = scoreBox(c, 3, `内容分（识别到 ${r.score}/${r.total} 个词）。流利度和发音需要人耳判断，可以在日报里贴录音感受给教练。`) + `<div class="small mute" style="margin-top:10px">识别结果：${esc(said || '（没有识别到声音）')}</div><div class="diff" style="font-size:1.1rem;line-height:2;margin-top:8px">${r.words.map((w, i) => `<span class="${r.marks[i] ? 'm' : 'x'}">${esc(w)}</span>`).join(' ')}</div>` + explain(it, sentenceAnalysis(it.text)); wireEx(el);
+  }); } });
+};
+R.asq = (el, it) => {
+  el.innerHTML = `<div class="stage" style="padding:10px 0"><div class="status" id="st">听问题，用一个词或短语回答</div><div id="live" class="mute" style="min-height:1.6em;margin-top:8px"></div><div class="row" style="justify-content:center;margin-top:10px"><input id="typed" style="max-width:260px" placeholder="也可以直接打字回答" autocomplete="off"><button class="sm" id="tsub">提交</button></div></div><div id="ex"></div>`;
+  let done = false;
+  const finish = (said) => {
+    if (done) return; done = true; PTE._stopListen && PTE._stopListen();
+    const n = (s) => s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+    const ok = it.answer.some(a => (' ' + n(said) + ' ').includes(' ' + n(a) + ' ')); record(it, ok ? 1 : 0, 1);
+    $('#ex', el).innerHTML = scoreBox(ok ? 1 : 0, 1, `你的回答：${esc(said || '（无）')}`) + `<div class="bk-ex"><div class="eyebrow">解析</div><h4>问题</h4><div class="bk-model">${esc(it.q)}</div><h4>参考答案</h4><div><b>${esc(it.model)}</b>${it.answer.length > 1 ? `<span class="small mute">（也接受：${it.answer.map(esc).join(' / ')}）</span>` : ''}</div><h4>技巧</h4><div class="why" style="animation:none">ASQ 只看答案对不对，不考语法和完整句子，说一个词就够。注意题干里的定位词（what do we call / how many / which part），没听清时说一个最可能的答案，不要沉默。</div><div class="row" style="margin-top:18px;gap:8px"><button class="sm" data-retry>${PTE.icon('redo')} 再做一次</button>${idx < list().length - 1 ? `<button class="sm pri" data-next>下一题 ${PTE.icon('arrow')}</button>` : ''}</div></div>`; wireEx(el);
+  };
+  $('#tsub', el).onclick = () => finish($('#typed', el).value); $('#typed', el).onkeydown = e => { if (e.key === 'Enter') finish($('#typed', el).value); };
+  audioBox(el, it, { noScript: true, onEnd: () => { if (!done && PTE.canRecognize) recordFor(el, 10, finish); } });
+};
+// ---- charts for Describe Image ----
+function chartSVG(it) {
+  const C = ['#2E4A7A', '#D9774A', '#4E9A7F', '#D9A13B', '#4F7CAC', '#C46A6A', '#877D72'];
+  let o = it.simchart, title, labels, vals, kind;
+  if (it.chart) { const c = it.chart; title = c.title + (c.subtitle ? ' · ' + c.subtitle : ''); labels = c.categories; vals = c.series ? c.series[0].values : c.values; kind = c.type; }
+  else { title = o.title; kind = o.type; if (o.data) { labels = o.data.map(d => d.label); vals = o.data.map(d => d.value ?? d.bar); } if (o.regions) { labels = o.regions.map(r => r.region); vals = o.regions.map(r => r.value); kind = 'bar'; } }
+  const W = 560, H = 300, hd = `<text x="${W / 2}" y="22" text-anchor="middle" font-size="14" font-weight="600" fill="#2A2521">${esc(title)}</text>`;
+  if (kind === 'table') return `<svg viewBox="0 0 ${W} ${40 + (o.rows.length + 1) * 34}">${hd}${[o.columns, ...o.rows].map((r, i) => r.map((c, j) => `<text x="${20 + j * (W - 40) / r.length}" y="${60 + i * 34}" font-size="13" ${i ? '' : 'font-weight="600"'} fill="#2A2521">${esc(c)}</text>`).join('') + `<line x1="16" x2="${W - 16}" y1="${68 + i * 34}" y2="${68 + i * 34}" stroke="#E6DDCF"/>`).join('')}</svg>`;
+  if (kind === 'process') return `<svg viewBox="0 0 ${W} 150">${hd}${o.steps.map((s, i) => { const w = (W - 30) / o.steps.length, x = 15 + i * w; return `<rect x="${x + 4}" y="50" width="${w - 18}" height="70" rx="10" fill="#E7ECF4" stroke="#2E4A7A"/><foreignObject x="${x + 8}" y="54" width="${w - 26}" height="62"><div xmlns="http://www.w3.org/1999/xhtml" style="font:12px/1.3 Inter,sans-serif;color:#2A2521;display:flex;align-items:center;justify-content:center;height:62px;text-align:center">${esc(s)}</div></foreignObject>${i < o.steps.length - 1 ? `<text x="${x + w - 10}" y="90" font-size="16" fill="#D9774A">→</text>` : ''}`; }).join('')}</svg>`;
+  if (kind === 'pie') { const tot = vals.reduce((a, b) => a + b, 0); let a0 = -Math.PI / 2; return `<svg viewBox="0 0 ${W} ${H}">${hd}${vals.map((v, i) => { const a1 = a0 + v / tot * Math.PI * 2, cx = 170, cy = 165, r = 110, p = `M${cx},${cy}L${cx + r * Math.cos(a0)},${cy + r * Math.sin(a0)}A${r},${r} 0 ${a1 - a0 > Math.PI ? 1 : 0} 1 ${cx + r * Math.cos(a1)},${cy + r * Math.sin(a1)}Z`; a0 = a1; return `<path d="${p}" fill="${C[i % 7]}" stroke="#FFFCF7" stroke-width="2"/><rect x="330" y="${60 + i * 28}" width="12" height="12" rx="3" fill="${C[i % 7]}"/><text x="350" y="${71 + i * 28}" font-size="13" fill="#2A2521">${esc(labels[i])} ${v}%</text>`; }).join('')}</svg>`; }
+  const mx = Math.max(...vals) * 1.15, bw = (W - 80) / vals.length, y = (v) => H - 40 - v / mx * (H - 80);
+  const axis = `<line x1="50" x2="${W - 20}" y1="${H - 40}" y2="${H - 40}" stroke="#D9CEBD"/>${labels.map((l, i) => `<text x="${60 + i * bw + bw / 2 - 10}" y="${H - 20}" text-anchor="middle" font-size="12" fill="#4A423B">${esc(l)}</text>`).join('')}`;
+  let body;
+  if (kind === 'line') body = `<polyline fill="none" stroke="#2E4A7A" stroke-width="3" points="${vals.map((v, i) => `${60 + i * bw + bw / 2 - 10},${y(v)}`).join(' ')}"/>${vals.map((v, i) => `<circle cx="${60 + i * bw + bw / 2 - 10}" cy="${y(v)}" r="4" fill="#2E4A7A"/><text x="${60 + i * bw + bw / 2 - 10}" y="${y(v) - 10}" text-anchor="middle" font-size="12" fill="#2A2521">${v}</text>`).join('')}`;
+  else body = vals.map((v, i) => `<rect x="${60 + i * bw + 6}" y="${y(v)}" width="${bw - 32}" height="${H - 40 - y(v)}" rx="5" fill="${C[0]}"/><text x="${60 + i * bw + bw / 2 - 10}" y="${y(v) - 6}" text-anchor="middle" font-size="12" fill="#2A2521">${v}</text>`).join('');
+  if (kind === 'comboBarLine') { const lv = o.data.map(d => d.line), lm = Math.max(...lv) * 1.15; body += `<polyline fill="none" stroke="#D9774A" stroke-width="3" points="${lv.map((v, i) => `${60 + i * bw + bw / 2 - 10},${H - 40 - v / lm * (H - 80)}`).join(' ')}"/><text x="${W - 20}" y="44" text-anchor="end" font-size="12" fill="#D9774A">— ${esc(o.lineLabel)}</text><text x="60" y="44" font-size="12" fill="#2E4A7A">■ ${esc(o.barLabel)}</text>`; }
+  return `<svg viewBox="0 0 ${W} ${H}">${hd}${axis}${body}</svg>`;
+}
+const SPEAK_TIPS = {
+  ra: '准备时间里先扫一遍长词和数字，默念重音；朗读时在逗号和意群处停顿，读错了不要回头重读。',
+  di: '用固定结构：①图表主题 ②最大 / 最小值（带数据）③一个趋势或对比 ④结论。40 秒内说完 4–6 句，保持语速稳定比内容多更重要。但只背模板、不说图里的具体数据，内容会被判 0 分。',
+  rl: '边听边记 5–6 个关键词（主题、原因、例子、结论）。开口用：The lecture was mainly about … / The speaker explained that … / Finally, the speaker concluded that …。用自己的话串起来，不要只念关键词。',
+};
+R.speak = (el, it) => {
+  const t = T[cur];
+  const stim = cur === 'ra' ? `<div class="bk-q">${esc(it.text)}</div>` : cur === 'di' ? `<div class="bk-chart">${chartSVG(it)}</div>` : `${it.title ? `<div class="eyebrow">${esc(it.title)}</div>` : ''}<textarea placeholder="边听边记笔记（考试时有可擦写白板）" style="min-height:70px;margin-top:10px"></textarea>`;
+  el.innerHTML = `${stim}<div class="stage" style="padding:16px 0 0"><div class="timerbig" id="clock">${t.prep}</div><div class="small mute" id="phase">${cur === 'rl' ? '听完讲座后开始准备' : '准备时间'}</div><div class="row" style="justify-content:center;margin-top:12px"><button class="pri" id="startnow">${PTE.icon('mic')} 跳过准备，开始说</button></div><div class="status" id="st" style="margin-top:10px"></div><div id="live" class="mute small" style="min-height:1.6em;margin-top:6px"></div></div><div id="ex"></div>`;
+  let timer, started = false;
+  const clear = () => clearInterval(timer); stopper = clear;
+  const startRec = () => {
+    if (started) return; started = true; clear(); $('#startnow', el).remove();
+    let r = t.rec; $('#clock', el).textContent = r; $('#phase', el).innerHTML = '<span class="bad">录音中</span>';
+    timer = setInterval(() => { if (!$('#clock', el)) return clear(); r--; $('#clock', el).textContent = Math.max(r, 0); if (r <= 0) { clear(); PTE._stopListen && PTE._stopListen(); } }, 1000);
+    recordFor(el, t.rec, said => { clear(); done(said); });
+  };
+  const prep = () => { let p = t.prep; $('#clock', el).textContent = p; timer = setInterval(() => { if (!$('#clock', el)) return clear(); p--; $('#clock', el).textContent = p; if (p <= 0) startRec(); }, 1000); };
+  $('#startnow', el).onclick = startRec;
+  if (cur === 'rl') { $('#startnow', el).disabled = true; audioBox(el, it, { noScript: true, onEnd: () => { $('#startnow', el) && ($('#startnow', el).disabled = false); $('#phase', el).textContent = '准备时间'; if (!started) prep(); } }); } else prep();
+  const done = (said) => {
+    const ex = $('#ex', el); let extra = '', s = 0, m = 0;
+    if (cur === 'ra') { const r = PTE.wordScore(it.text, said); m = 3; s = r.total ? Math.max(0, 3 - Math.ceil((r.total - r.score) / Math.max(1, r.total / 6))) : 0; extra = `<div class="diff" style="font-size:1rem;line-height:2;margin-top:12px">${r.words.map((w, i) => `<span class="${r.marks[i] ? 'm' : 'x'}">${esc(w)}</span>`).join(' ')}</div>`; ex.innerHTML = scoreBox(s, m, `内容分估算（读对 ${r.score}/${r.total} 词）。流利度和发音占 10 分，需要你自己听回放判断。`); }
+    else { const keys = it.keys || []; const got = keys.filter(k => (' ' + said.toLowerCase() + ' ').includes(k.toLowerCase())); m = keys.length ? 5 : 0; s = keys.length ? Math.round(got.length / keys.length * 5) : 0;
+      ex.innerHTML = keys.length ? scoreBox(s, 5, `内容估算：提到 ${got.length}/${keys.length} 个要点词`) : `<div class="bk-score small">${said ? `已录下 ${wc(said)} 个词。这道题没有要点词表，对照下面的参考答案自查。` : '没有识别到声音'}</div>`;
+      if (keys.length) extra = `<h4>要点词覆盖</h4><div class="row" style="gap:6px">${keys.map(k => `<span class="chip" style="${got.includes(k) ? 'background:var(--okbg);color:var(--ok)' : ''}">${esc(k)}</span>`).join('')}</div>`; }
+    if (m) record(it, s, m);
+    ex.innerHTML += `<div class="small mute" style="margin-top:10px">识别结果：${esc(said || '（没有识别到）')}</div><div class="bk-ex"><div class="eyebrow">解析</div>${extra}${it.model ? `<h4>参考答案</h4><div class="bk-model">${esc(it.model)}</div>` : ''}${cur === 'rl' ? `<h4>讲座原文</h4><div class="bk-model">${esc(it.audio)}</div>` : ''}<h4>官方评分</h4><div class="small" style="color:var(--ink2);line-height:1.7">${t.rule}</div><h4>技巧</h4><div class="why" style="animation:none">${SPEAK_TIPS[cur]}</div><div class="row" style="margin-top:18px;gap:8px"><button class="sm" data-retry>${PTE.icon('redo')} 再做一次</button>${idx < list().length - 1 ? `<button class="sm pri" data-next>下一题 ${PTE.icon('arrow')}</button>` : ''}</div></div>`;
+    wireEx(el);
+  };
+};
+const WRITE_TIPS = {
+  swt: '结构：主题句 + while / although / which 连接次要信息，最后一个句号。先找每段主题句，再用连接词合成一句。字数控制在 25–50 词最稳，必须只有一个句号。',
+  we: '四段式：开头表明立场（2–3 句）→ 主体段 1（论点 + 解释 + 例子）→ 主体段 2 → 结论重申立场。写够 220–280 词，最后留 2 分钟检查拼写和单复数。',
+  sst: '边听边记主题和 3–4 个要点。写法：The speaker discusses … He / She first explains … Moreover … Finally, the speaker concludes that …。字数严格控制在 50–70 词。',
+};
+R.write = (el, it) => {
+  const t = T[cur];
+  el.innerHTML = `${it.title ? `<div class="eyebrow">${esc(it.title)}</div>` : ''}${cur === 'swt' ? `<div class="bk-q" style="margin:10px 0 16px">${esc(it.text)}</div>` : cur === 'we' ? `<div class="bk-q" style="margin:10px 0 16px"><b>Topic：</b>${esc(it.prompt)}</div>` : ''}<div class="row"><span class="grow small mute">${t.words[0]}–${t.words[1]} 词${cur === 'swt' ? '，只能写一句话' : ''}</span><span class="chip" id="tm">${PTE.icon('clock')} ${t.time / 60}:00</span></div><textarea class="bk-ta" id="ta" spellcheck="false" placeholder="在这里写作…" style="margin-top:8px"></textarea><div class="bk-wc" id="wc">0 词</div><button class="pri" id="sub" style="margin-top:10px">${PTE.icon('check')} 提交</button><div id="ex"></div>`;
+  if (cur === 'sst') audioBox(el, it, { noScript: true });
+  const ta = $('#ta', el); let left = t.time, timer;
+  ta.oninput = () => { const n = wc(ta.value); $('#wc', el).textContent = n + ' 词'; $('#wc', el).style.color = n >= t.words[0] && n <= t.words[1] ? 'var(--ok)' : ''; };
+  const tick = () => { left--; $('#tm', el).innerHTML = `${PTE.icon('clock')} ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`; if (left <= 0) { clearInterval(timer); $('#sub', el) && $('#sub', el).click(); } };
+  ta.addEventListener('focus', () => { if (!timer && mode === 'exam') timer = setInterval(tick, 1000); }, { once: true });
+  stopper = () => clearInterval(timer);
+  $('#sub', el).onclick = () => {
+    clearInterval(timer); const v = ta.value.trim(); if (!v) return PTE.toast('先写点内容');
+    const n = wc(v), sents = (v.match(/[.!?](\s|$)/g) || []).length, caps = v === v.toUpperCase() && /[A-Z]/.test(v);
+    let form, fmax, zero = false;
+    if (cur === 'swt') { fmax = 1; form = n >= 5 && n <= 75 && sents <= 1 && !caps ? 1 : 0; zero = !form; }
+    if (cur === 'we') { fmax = 2; form = caps || n < 120 || n > 380 ? 0 : n >= 200 && n <= 300 ? 2 : 1; zero = !form; }
+    if (cur === 'sst') { fmax = 2; form = caps || n < 40 || n > 100 ? 0 : n >= 50 && n <= 70 ? 2 : 1; zero = !form; }
+    ta.disabled = true; $('#sub', el).remove(); record(it, form, fmax);
+    const rows = { swt: [['内容', '0–2', '是否覆盖全文主旨和主要论点'], ['形式', `${form} / 1`, `一句话、5–75 词：你写了 ${n} 词、${Math.max(sents, 1)} 句`], ['语法', '0–2', '主谓一致、从句结构是否正确'], ['词汇', '0–2', '用词是否准确']], we: [['内容', '0–3', '是否回应题目、论证是否充分'], ['形式', `${form} / 2`, `200–300 词：你写了 ${n} 词`], ['结构连贯', '0–2', '开头、主体、结论和过渡'], ['语法', '0–2', ''], ['语言范围', '0–2', '句式是否多样'], ['词汇', '0–2', '学术词汇是否准确'], ['拼写', '0–2', '错 1 个扣 1 分']], sst: [['内容', '0–2', '是否覆盖主要信息'], ['形式', `${form} / 2`, `50–70 词：你写了 ${n} 词`], ['语法', '0–2', ''], ['词汇', '0–2', ''], ['拼写', '0–2', '']] }[cur];
+    $('#ex', el).innerHTML = (zero ? `<div class="bk-score" style="background:var(--badbg)"><span style="color:var(--bad)">${PTE.icon('flag')}</span><span class="small"><b style="font-size:1rem;color:var(--bad)">形式不合格，按官方规则整题 0 分。</b>${cur === 'swt' && sents > 1 ? '你写了不止一句话。' : ''}</span></div>` : `<div class="bk-score small">形式分已自动判定，其余分项请对照参考答案自查，或把作文贴进日报让教练批改。</div>`) +
+      `<div class="bk-ex"><div class="eyebrow">解析</div><h4>评分表</h4><table class="bk-rub">${rows.map(r => `<tr><td><b>${r[0]}</b></td><td class="small" style="color:var(--ink2)">${r[2]}</td><td>${r[1]}</td></tr>`).join('')}</table>${it.model ? `<h4>参考答案（${wc(it.model)} 词）</h4><div class="bk-model">${esc(it.model)}</div>` : ''}${cur === 'sst' ? `<h4>录音原文</h4><div class="bk-model">${esc(it.audio)}</div>` : ''}<h4>技巧</h4><div class="why" style="animation:none">${WRITE_TIPS[cur]}</div><div class="row" style="margin-top:18px;gap:8px"><button class="sm" data-copy>${PTE.icon('copy')} 复制作文，贴进日报</button><button class="sm" data-retry>${PTE.icon('redo')} 再做一次</button>${idx < list().length - 1 ? `<button class="sm pri" data-next>下一题 ${PTE.icon('arrow')}</button>` : ''}</div></div>`;
+    $('[data-copy]', el).onclick = () => { navigator.clipboard.writeText(`【${cur.toUpperCase()} · ${it.title || (it.prompt || it.text || '').slice(0, 40)}】\n${v}`); PTE.toast('已复制'); };
+    wireEx(el);
+  };
+};
+</script>
+</body>
+</html>

@@ -252,12 +252,12 @@
   PTE.MOD = {
     guide: { n: '题型', ic: 'compass', c: '#7A6E9C' }, read: { n: '阅读学词', ic: 'book', c: '#4F7CAC' }, review: { n: '复习', ic: 'cards', c: '#C8963A' },
     speak: { n: '口语', ic: 'mic', c: '#C46E55' }, break: { n: '休息', ic: 'coffee', c: '#7F9F78' }, listen: { n: '听力', ic: 'head', c: '#4E8F86' },
-    reading: { n: '阅读题', ic: 'eye', c: '#5C6FA3' }, write: { n: '写作', ic: 'pen', c: '#B0675C' }, wrap: { n: '汇报', ic: 'flag', c: '#2A2521' },
+    reading: { n: '阅读题', ic: 'eye', c: '#5C6FA3' }, write: { n: '写作', ic: 'pen', c: '#B0675C' }, wrap: { n: '汇报', ic: 'flag', c: '#2A2521' }, bank: { n: '题库', ic: 'list', c: '#5C6FA3' },
   };
 
   /* ---------- layout ---------- */
   PTE.nav = (active) => {
-    const items = [['index.html', '今日', 'home'], ['read.html', '阅读', 'book'], ['words.html', '生词本', 'cards'], ['drill.html', '训练', 'target'], ['guide.html', '题型', 'compass'], ['log.html', '复盘', 'chart']];
+    const items = [['index.html', '今日', 'home'], ['read.html', '阅读', 'book'], ['words.html', '生词本', 'cards'], ['drill.html', '训练', 'target'], ['bank.html', '题库', 'list'], ['guide.html', '题型', 'compass'], ['log.html', '复盘', 'chart']];
     const el = document.createElement('header');
     el.className = 'appbar';
     el.innerHTML = '<a class="logo" href="index.html"><img src="assets/logo.svg" alt=""><span>PTE <b>Rise</b></span></a><nav class="tabbar">' + items.map(([h, t, ic]) => `<a href="${h}"${h === active ? ' class="on"' : ''}${h === 'words.html' ? ' data-drop="1"' : ''}>${PTE.icon(ic)}<span>${t}</span>${h === 'words.html' ? '<span class="nbadge hidden"></span>' : ''}</a>`).join('') + '</nav>';

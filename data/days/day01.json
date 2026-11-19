@@ -12,7 +12,7 @@
     { "mins": 40, "mod": "speak", "title": "RA 4 段 + RS 15 句", "detail": "RA：35 秒准备、40 秒朗读，追求流畅不停顿，读错不要回读。RS：听完一句立刻复述，记住意群而不是单个词", "link": "drill.html#rs" },
     { "mins": 10, "mod": "break", "title": "休息", "detail": "离开屏幕，喝水走动" },
     { "mins": 40, "mod": "listen", "title": "WFD 听写 25 句", "detail": "每句只播一次（练习时允许重听一次），写下所有能记住的词，注意复数和 -ed 结尾", "link": "drill.html#wfd" },
-    { "mins": 25, "mod": "reading", "title": "读题型指南（阅读 + 听力部分）", "detail": "重点看 R&W 填空、排序、WFD、HIW、SST 的做法", "link": "guide.html#reading" },
+    { "mins": 25, "mod": "bank", "title": "题库体验：阅读 + 听力题型各做 1 题", "detail": "用练习模式，把 RWFIB、MCMA、RO、RFIB、HIW、LFIB 各做 1 题。每题做完认真看中文解析：考点、答案依据、逐项错因和技巧", "link": "bank.html#rwfib" },
     { "mins": 30, "mod": "write", "title": "写作：SWT 1 篇 + WE 1 篇", "detail": "SWT（10 分钟）：用一句话概括文章 A。WE（20 分钟）：题目见写作页面，尽量用上今天的 3–5 个新词", "link": "drill.html#write" },
     { "mins": 10, "mod": "wrap", "title": "生成汇报并发给教练", "detail": "首页底部填写自评后，复制汇报发给我", "link": "index.html#report" }
   ],
