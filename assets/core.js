@@ -112,17 +112,31 @@
   let voices = [];
   const loadVoices = () => { voices = speechSynthesis.getVoices().filter(v => /^en[-_]/i.test(v.lang)); };
   if ('speechSynthesis' in window) { loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
-  PTE.voices = () => voices;
+  // rank voices: neural / natural voices sound far less robotic than legacy ones (David, Zira…)
+  PTE.voiceScore = (v) => {
+    let s = 0; const n = v.name;
+    if (/Natural/i.test(n)) s += 100;
+    if (/Neural|Premium|Enhanced|Siri/i.test(n)) s += 80;
+    if (/Online/i.test(n)) s += 40;
+    if (/Google/i.test(n)) s += 30;
+    if (/David|Zira|Mark|Hazel|George|Susan|eSpeak|Fred|Albert|Bad News|Bells|Boing|Bubbles|Cellos|Jester|Organ|Trinoids|Whisper|Zarvox|Superstar|Wobble/i.test(n)) s -= 60;
+    if (/en[-_](AU|GB)/i.test(v.lang)) s += 12; else if (/en[-_](US|IE|NZ|CA)/i.test(v.lang)) s += 6;
+    if (!v.localService) s += 5;
+    return s;
+  };
+  PTE.voices = () => voices.slice().sort((a, b) => PTE.voiceScore(b) - PTE.voiceScore(a));
+  PTE.natural = (v) => PTE.voiceScore(v) >= 70;
   PTE.pickVoice = () => {
     const want = PTE.get('voice', '');
-    return voices.find(v => v.name === want) || voices.find(v => /en[-_]AU/i.test(v.lang)) || voices.find(v => /en[-_]GB/i.test(v.lang)) || voices[0];
+    return voices.find(v => v.name === want) || PTE.voices()[0];
   };
   PTE.speak = (text, opts = {}) => new Promise(res => {
     if (!('speechSynthesis' in window)) return res();
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     const v = PTE.pickVoice(); if (v) { u.voice = v; u.lang = v.lang; } else u.lang = 'en-GB';
-    u.rate = opts.rate || PTE.get('rate', 0.95);
+    u.rate = opts.rate || PTE.get('rate', v && PTE.natural(v) ? 1 : 0.95);
+    if (opts.onboundary) u.onboundary = opts.onboundary;
     u.onend = u.onerror = () => res();
     speechSynthesis.speak(u);
   });
@@ -238,6 +252,27 @@
       ps.forEach(p => { p.vy += .35; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.r += p.vr; ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 3, p.s, p.s / 1.6); ctx.restore(); });
       if (++f < 150) requestAnimationFrame(tick); else cv.remove();
     })();
+  };
+  PTE.voiceSheet = (note) => {
+    const list = PTE.voices(); const cv = PTE.pickVoice();
+    const nat = list.filter(PTE.natural);
+    const ua = navigator.userAgent; const isEdge = /Edg\//.test(ua), isIOS = /iPhone|iPad/.test(ua), isAndroid = /Android/.test(ua);
+    const tip = nat.length ? `找到 ${nat.length} 个自然人声（★），已自动优先使用。` :
+      isIOS ? 'iPhone 上可以下载更自然的声音：设置 → 辅助功能 → 朗读内容 → 声音 → 英语，下载带“增强 / 优化”的声音（例如 Karen、Daniel），然后回来刷新。' :
+      isAndroid ? '安卓上可以在 设置 → 文字转语音 中选择 Google 语音引擎，并下载高质量英语语音。' :
+      isEdge ? '没有找到 Natural 语音，请确认联网后刷新页面。' : '电脑上用 <b>Microsoft Edge</b> 打开本网站，会有 Natasha、Sonia、William 等非常自然的 Natural 人声，电子感最轻。';
+    const sh = PTE.sheet(`<h2 style="margin-top:0">发音设置</h2>
+      <div class="note small" style="background:var(--bg);border-radius:14px;padding:10px 12px;margin-bottom:12px">${tip}</div>
+      <div class="small mute">声音（考试会有英、澳、美等多种口音，可以换着练）</div>
+      <select id="voice" style="margin:6px 0 14px">${list.map(v => `<option value="${PTE.esc(v.name)}" ${cv && v.name === cv.name ? 'selected' : ''}>${PTE.natural(v) ? '★ ' : ''}${PTE.esc(v.name.replace(/^Microsoft /, ''))}</option>`).join('') || '<option>（没有英文语音）</option>'}</select>
+      <div class="small mute">单词/句子语速 <b id="rv"></b></div><input type="range" id="rate" min="0.7" max="1.2" step="0.05" style="width:100%">
+      <button class="sm" id="test" style="margin-top:10px">${PTE.icon('vol')} 试听</button>
+      ${note ? `<p class="small mute" style="margin-top:14px">${note}</p>` : ''}`);
+    const sel = sh.querySelector('#voice'), rate = sh.querySelector('#rate'), rv = sh.querySelector('#rv');
+    const cur = PTE.get('rate', cv && PTE.natural(cv) ? 1 : 0.95); rate.value = cur; rv.textContent = cur;
+    sel.onchange = () => { PTE.set('voice', sel.value); PTE.speak('Hello! This is how I sound.'); };
+    rate.oninput = () => { PTE.set('rate', +rate.value); rv.textContent = rate.value; };
+    sh.querySelector('#test').onclick = () => PTE.speak('Researchers have found that regular exercise can significantly improve memory, especially in older adults.');
   };
   PTE.sheet = (html) => {
     const s = document.createElement('div'); s.className = 'scrim';

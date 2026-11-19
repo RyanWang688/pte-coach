@@ -6,7 +6,7 @@
 <link rel="icon" href="assets/logo.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=4">
+<link rel="stylesheet" href="assets/style.css?v=6">
 </head>
 <body>
 <main>
@@ -16,9 +16,10 @@
   <div class="row" style="margin-top:26px"><h2 class="grow" style="margin:0">今日 25 词</h2><span class="chip" id="known"></span></div>
   <div class="wordgrid" id="chips" style="margin-top:12px"></div>
 </main>
-<script src="assets/core.js?v=4"></script>
-<script src="assets/drag.js?v=5"></script>
-<script src="assets/lookup.js?v=4"></script>
+<script src="assets/core.js?v=6"></script>
+<script src="assets/drag.js?v=6"></script>
+<script src="assets/lookup.js?v=6"></script>
+<script src="assets/player.js?v=6"></script>
 <script>
 PTE.nav('read.html');
 PTE.track('read');
@@ -36,14 +37,13 @@ let wmap;
     el.className = 'card fadein';
     el.innerHTML = `<div class="banner" style="background:${a.color || 'var(--grad)'}">${PTE.icon(a.icon || 'book', 'big')}<div><div class="small" style="opacity:.85;font-weight:700">文章 ${ai + 1} · ${PTE.esc(a.topic)}</div><div class="t">${PTE.esc(a.title)}</div></div></div>
       <div class="stepper"><span class="on"></span><span></span><span></span></div>
-      <div class="row" style="margin-bottom:10px"><button class="sm" data-act="play">${PTE.icon('vol')} 听全文</button><button class="sm ghost round" data-act="stop" aria-label="停止">${PTE.icon('stop')}</button></div>
-      <div class="article">${a.paras.map(p => '<p>' + mark(p) + '</p>').join('')}</div>
+      <div class="artwrap"><div class="article">${a.paras.map(p => '<p>' + PTE.sentences(p).map((s, j, arr) => `<span class="sent"${j === arr.length - 1 ? ' data-pend="1"' : ''}>${mark(s)}</span>`).join(' ') + '</p>').join('')}</div></div>
       <div class="center"><button class="pri lg" data-act="done">${PTE.icon('check')} 读完了，开始答题</button></div>
       <div class="quiz"></div>`;
     box.appendChild(el);
-    PTE.clickable(el.querySelector('.article'));
-    el.querySelector('[data-act=play]').onclick = () => PTE.speak(a.paras.map(plain).join(' '), { rate: 0.95 });
-    el.querySelector('[data-act=stop]').onclick = () => speechSynthesis.cancel();
+    const art = el.querySelector('.article');
+    PTE.player(el.querySelector('.artwrap'), [...art.querySelectorAll('.sent')]);
+    PTE.clickable(art);
     el.querySelector('[data-act=done]').onclick = (ev) => {
       ev.currentTarget.parentElement.remove();
       a.paras.forEach(p => p.replace(RE, (_, s, l) => PTE.learn(l || s)));
