@@ -3,6 +3,8 @@
     "id": "d01a",
     "title": "Why Cities Run Out of Water",
     "topic": "环境 / 城市",
+    "icon": "leaf",
+    "color": "linear-gradient(135deg,#14B8B0,#3BA9FF)",
     "paras": [
       "For most of the twentieth century, city planners {{assumed|assume}} that fresh water would always be {{available}} when people turned on the tap. That assumption is now being questioned. When researchers {{analysed|analyse}} {{data}} from more than two hundred large cities, they {{estimated|estimate}} that one in four already faces regular water shortages.",
       "It is {{evident}} that climate is only one {{factor}}. Population growth, ageing pipes and poor planning also play a part. In many places, water is not {{distributed|distribute}} fairly: wealthy suburbs receive a steady supply, while poorer districts depend on trucks and wells.",
@@ -19,6 +21,8 @@
     "id": "d01b",
     "title": "The Price of a Cup of Coffee",
     "topic": "经济 / 贸易",
+    "icon": "coin",
+    "color": "linear-gradient(135deg,#FF7A59,#FFC845)",
     "paras": [
       "A cup of coffee may seem simple, but the {{concept}} of its price is surprisingly complex. The final cost {{consists|consist}} of many parts: the beans, transport, roasting, rent, wages and tax. Growers, who do most of the hard work, often receive less than ten percent of what the customer pays.",
       "To understand why, we need some historical {{context}}. Coffee was first grown as an {{export}} crop in colonies, where the {{economy}} was designed to send raw materials to Europe. Many producing countries still {{derive}} a large share of their national income from coffee, yet they have little control over its price, which is set on international markets.",

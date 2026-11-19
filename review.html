@@ -1,26 +1,30 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>单词复习</title>
-<link rel="stylesheet" href="assets/style.css?v=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>单词复习 · PTE Rise</title>
+<link rel="icon" href="assets/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=3">
 </head>
 <body>
 <main>
-  <h1>单词复习 · 听音默写</h1>
-  <div class="tabs" id="modes"></div>
-  <p class="small mute" id="desc"></p>
-  <div class="card" id="box"></div>
-  <p class="small mute">提示：按 Enter 提交，按 Ctrl（或点 🔊）重听。默写对了的词，下次复习间隔会拉长（1→2→4→7→15→30 天）；错了就回到明天。</p>
+  <h1>听音默写</h1>
+  <div class="seg" id="modes"></div>
+  <div class="row small" style="margin-bottom:8px"><span class="mute grow" id="pos"></span><span class="combo" id="combo"></span></div>
+  <div class="prog"><i id="bar" style="width:0"></i></div>
+  <div class="card flash" id="box"></div>
+  <p class="center small mute" id="foot"></p>
 </main>
-<script src="assets/core.js?v=1"></script>
-<script src="assets/lookup.js?v=1"></script>
+<script src="assets/core.js?v=3"></script>
 <script>
 PTE.nav('review.html');
 PTE.track('review');
-const MODES = { due: '到期复习', new: '今日新词', wrong: '错词本' };
+const MODES = { due: ['到期复习', 'redo'], new: ['今日新词', 'spark'], wrong: ['错词本', 'flag'] };
 const mode = new URLSearchParams(location.search).get('mode') || 'due';
-document.getElementById('modes').innerHTML = Object.entries(MODES).map(([k, v]) => `<a class="btn${k === mode ? ' primary' : ''}" href="review.html?mode=${k}">${v}</a>`).join('');
+document.getElementById('modes').innerHTML = Object.entries(MODES).map(([k, [v, i]]) => `<button class="${k === mode ? 'on' : ''}" onclick="location.href='review.html?mode=${k}'">${PTE.icon(i)} ${v}</button>`).join('');
+document.getElementById('foot').textContent = { due: '答对：下次间隔变长 · 答错：明天再来', new: '第一遍默写只做统计，不影响复习间隔', wrong: '按出错次数排序' }[mode];
 (async () => {
   const [day, wmap] = await Promise.all([PTE.currentDay(), PTE.words()]);
   const custom = PTE.get('custom', {});
@@ -31,36 +35,52 @@ document.getElementById('modes').innerHTML = Object.entries(MODES).map(([k, v]) 
   else keys = PTE.due();
   keys = keys.filter(k => wmap[k] || custom[k]);
   if (mode !== 'wrong') keys.sort(() => Math.random() - 0.5);
-  document.getElementById('desc').textContent = { due: `今天到期 ${keys.length} 个。复习完后再学新词。`, new: `今日新词 ${keys.length} 个，第一遍默写只做统计，不改变复习间隔。`, wrong: `错过的词 ${keys.length} 个，按出错次数排序。` }[mode];
   const box = document.getElementById('box');
-  let i = 0, ok = 0, bad = 0, retry = false;
-  if (!keys.length) { box.innerHTML = '<p>这里暂时没有需要复习的词 🎉</p><a class="btn primary" href="read.html">去阅读学新词</a>'; return; }
-
+  let i = 0, ok = 0, bad = 0, combo = 0, best = 0, retry = false;
+  if (!keys.length) {
+    box.innerHTML = `<div class="pulse-in"><div style="color:var(--mint)">${PTE.icon('check').replace('class="i"', 'class="i" style="width:64px;height:64px"')}</div><p class="big" style="font-weight:800;font-size:1.3rem">${mode === 'due' ? '今天没有到期的词' : '这里是空的'}</p><div class="row" style="justify-content:center"><a class="btn" href="review.html?mode=new">${PTE.icon('spark')} 默写今日新词</a><a class="btn pri" href="read.html">${PTE.icon('book')} 去阅读</a></div></div>`;
+    return;
+  }
   const show = () => {
-    if (i >= keys.length) { box.innerHTML = `<p class="big">完成！</p><p>${ok} 对 / ${bad} 错</p><a class="btn" href="review.html?mode=wrong">看错词本</a> <a class="btn primary" href="index.html">回到今日任务</a>`; return; }
+    document.getElementById('pos').textContent = `${Math.min(i + 1, keys.length)} / ${keys.length}`;
+    document.getElementById('bar').style.width = (i / keys.length * 100) + '%';
+    document.getElementById('combo').innerHTML = combo >= 3 ? `${PTE.icon('flame')} 连击 ×${combo}` : '';
+    if (i >= keys.length) {
+      const pct = ok / (ok + bad || 1);
+      box.innerHTML = `<div class="pulse-in"><div class="scorering">${PTE.ring(pct, 120, 10, Math.round(pct * 100) + '%')}</div><p style="font-weight:800;font-size:1.3rem;margin:8px 0">${pct === 1 ? '全对！太强了' : pct >= .8 ? '很棒！' : '错词明天再见'}</p><p class="mute">${ok} 对 · ${bad} 错 · 最高连击 ${best}</p><div class="row" style="justify-content:center"><a class="btn" href="review.html?mode=wrong">${PTE.icon('flag')} 错词本</a><a class="btn pri" href="index.html">${PTE.icon('home')} 回到今日</a></div></div>`;
+      box.querySelector('.fg').style.stroke = pct >= .8 ? 'var(--ok)' : 'var(--coral)';
+      PTE.animateRings(box); if (pct >= .8) PTE.confetti();
+      return;
+    }
     const k = keys[i]; const w = wmap[k];
     const meaning = w ? w.t : custom[k].def;
-    box.innerHTML = `<div class="row"><span class="mute small">${i + 1} / ${keys.length}</span><span class="grow"></span><span class="small mute">${srs[k] ? '第 ' + srs[k].box + ' 格' : '新词'}</span></div>
-      <p style="font-size:1.1rem;margin:12px 0">${PTE.esc(meaning)}</p>
-      <div class="row"><button class="icon" id="say">🔊 单词</button><button class="icon" id="slow">🐢</button></div>
-      <input type="text" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="拼写这个单词" style="margin-top:12px;font-size:1.2rem">
-      <div id="fb" style="margin-top:12px"></div>`;
-    const say = (r) => PTE.speak(w ? w.w : k, { rate: r });
+    box.className = 'card flash';
+    box.innerHTML = `<span class="chip">${srs[k] ? '第 ' + srs[k].box + ' 级' : '新词'}</span>
+      <div class="meaning" style="margin:16px 0">${PTE.esc(meaning)}</div>
+      <div class="row" style="justify-content:center"><button class="pri round" id="say" aria-label="发音">${PTE.icon('vol')}</button><button class="round" id="slow" aria-label="慢速">${PTE.icon('slow')}</button></div>
+      <input type="text" id="ans" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="拼写单词，回车提交">
+      <div id="fb" style="margin-top:14px;min-height:2em"></div>`;
+    const word = w ? w.w : k;
+    const say = (r) => PTE.speak(word, { rate: r });
     document.getElementById('say').onclick = () => say(); document.getElementById('slow').onclick = () => say(0.6);
     const ans = document.getElementById('ans'); ans.focus(); say();
     retry = false;
     ans.onkeydown = (e) => {
-      if (e.key === 'Control') { say(); return; }
       if (e.key !== 'Enter') return;
-      const target = (w ? w.w : k).toLowerCase();
-      const right = ans.value.trim().toLowerCase() === target;
-      if (retry) { if (right) { i++; show(); } else { ans.value = ''; PTE.toast('再抄一遍：' + target); } return; }
+      const right = ans.value.trim().toLowerCase() === word.toLowerCase();
+      if (retry) { if (right) { i++; show(); } else { ans.value = ''; box.classList.remove('badf'); void box.offsetWidth; box.classList.add('badf'); } return; }
       if (mode === 'new') PTE.updateStats(s => { if (right) s.review.ok++; else { s.review.bad++; if (!s.review.wrong.includes(k)) s.review.wrong.push(k); } });
       else PTE.grade(k, right);
-      if (right) { ok++; document.getElementById('fb').innerHTML = '<span class="ok big">✓</span>'; setTimeout(() => { i++; show(); }, 500); }
-      else {
-        bad++; retry = true;
-        document.getElementById('fb').innerHTML = `<div class="bad big">${PTE.esc(w ? w.w : k)}</div><div class="mute">/${PTE.esc(w ? w.p : '')}/</div>` + (w ? `<div style="margin-top:6px">${PTE.esc(w.e)} <button class="icon" id="ex">🔊</button></div><div class="small mute">${PTE.esc(w.c)}</div>` : '') + '<div class="small" style="margin-top:6px">正确拼写一遍后按 Enter 继续</div>';
+      if (right) {
+        ok++; combo++; best = Math.max(best, combo);
+        box.classList.add('okf');
+        document.getElementById('fb').innerHTML = `<b class="ok" style="font-size:1.2rem">${PTE.icon('check')} ${PTE.esc(word)}</b>`;
+        if (combo > 0 && combo % 10 === 0) { PTE.confetti(); PTE.toast(`${combo} 连击！`); }
+        setTimeout(() => { i++; show(); }, 650);
+      } else {
+        bad++; combo = 0; retry = true;
+        box.classList.add('badf');
+        document.getElementById('fb').innerHTML = `<div class="bad" style="font-size:1.6rem;font-weight:800">${PTE.esc(word)}</div><div class="mute">/${PTE.esc(w ? w.p : '')}/</div>` + (w ? `<div class="ex" style="background:var(--bg);border-radius:14px;padding:10px 12px;margin-top:8px;text-align:left">${PTE.esc(w.e)} <button class="sm round" id="ex" aria-label="朗读例句">${PTE.icon('vol')}</button><div class="small mute">${PTE.esc(w.c)}</div></div>` : '') + '<div class="small mute" style="margin-top:6px">照着正确拼写敲一遍，回车继续</div>';
         const ex = document.getElementById('ex'); if (ex) ex.onclick = () => PTE.speak(w.e);
         ans.value = ''; say();
       }

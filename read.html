@@ -1,101 +1,114 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>阅读学词</title>
-<link rel="stylesheet" href="assets/style.css?v=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>阅读学词 · PTE Rise</title>
+<link rel="icon" href="assets/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=3">
 </head>
 <body>
 <main>
   <h1>阅读学词</h1>
-  <p class="small mute">步骤：① 通读全文，<span class="tw">黄色</span>是今天的新词，点开可以看释义、听发音、听例句、跟读；其它不认识的词也能点。② 读完后先做理解题，再做填空题（只给首字母和中文提示）。③ 做完后，新词会自动进入间隔复习队列。</p>
+  <div class="row small mute" style="margin:8px 0 4px" id="hints"></div>
   <div id="arts"></div>
-  <h2>今日新词一览</h2>
-  <div class="card row" id="chips"></div>
+  <div class="row" style="margin-top:26px"><h2 class="grow" style="margin:0">今日 25 词</h2><span class="chip" id="known"></span></div>
+  <div class="wordgrid" id="chips" style="margin-top:12px"></div>
 </main>
-<script src="assets/core.js?v=1"></script>
-<script src="assets/lookup.js?v=1"></script>
+<script src="assets/core.js?v=3"></script>
+<script src="assets/lookup.js?v=3"></script>
 <script>
 PTE.nav('read.html');
 PTE.track('read');
-const mark = (s) => s.replace(/\{\{([^}|]+)(?:\|([^}]+))?\}\}/g, (_, shown, lemma) => `<span class="tw" data-lemma="${PTE.esc(lemma || shown)}">${PTE.esc(shown)}</span>`);
-const plain = (s) => s.replace(/\{\{([^}|]+)(?:\|[^}]+)?\}\}/g, '$1');
+document.getElementById('hints').innerHTML = [['book', '黄色 = 今日新词'], ['spark', '任何单词都能点'], ['vol', '可听全文 / 例句'], ['check', '读完再答题']].map(([i, t]) => `<span class="chip">${PTE.icon(i)} ${t}</span>`).join('');
+const RE = /\{\{([^}|]+)(?:\|([^}]+))?\}\}/g;
+const mark = (s) => s.replace(RE, (_, shown, lemma) => `<span class="tw" data-lemma="${PTE.esc(lemma || shown)}">${PTE.esc(shown)}</span>`);
+const plain = (s) => s.replace(RE, '$1');
+let wmap;
 (async () => {
   const day = await PTE.currentDay();
-  const [arts, wmap] = await Promise.all([PTE.load('data/articles/' + day.articles + '.json'), PTE.words()]);
+  let arts; [arts, wmap] = await Promise.all([PTE.load('data/articles/' + day.articles + '.json'), PTE.words()]);
   const box = document.getElementById('arts');
   arts.forEach((a, ai) => {
-    const prog = PTE.get('art:' + a.id, {});
     const el = document.createElement('section');
-    el.className = 'card';
-    el.innerHTML = `<div class="row"><h2 class="grow" style="margin:0">${ai + 1}. ${PTE.esc(a.title)}</h2><span class="pill">${PTE.esc(a.topic)}</span></div>
-      <div class="row small" style="margin:8px 0"><button class="icon" data-act="play">🔊 朗读全文</button><button class="icon" data-act="stop">⏹</button><span class="mute">听一遍示范，可以当作 RA 的跟读素材</span></div>
+    el.className = 'card fadein';
+    el.innerHTML = `<div class="banner" style="background:${a.color || 'var(--grad)'}">${PTE.icon(a.icon || 'book', 'big')}<div><div class="small" style="opacity:.85;font-weight:700">文章 ${ai + 1} · ${PTE.esc(a.topic)}</div><div class="t">${PTE.esc(a.title)}</div></div></div>
+      <div class="stepper"><span class="on"></span><span></span><span></span></div>
+      <div class="row" style="margin-bottom:10px"><button class="sm" data-act="play">${PTE.icon('vol')} 听全文</button><button class="sm ghost round" data-act="stop" aria-label="停止">${PTE.icon('stop')}</button></div>
       <div class="article">${a.paras.map(p => '<p>' + mark(p) + '</p>').join('')}</div>
-      <button class="primary" data-act="done">${prog.read ? '已读完 ✓ 再做一次题' : '读完了，开始答题'}</button>
-      <div class="quiz hidden"></div>`;
+      <div class="center"><button class="pri lg" data-act="done">${PTE.icon('check')} 读完了，开始答题</button></div>
+      <div class="quiz"></div>`;
     box.appendChild(el);
     PTE.clickable(el.querySelector('.article'));
     el.querySelector('[data-act=play]').onclick = () => PTE.speak(a.paras.map(plain).join(' '), { rate: 0.95 });
     el.querySelector('[data-act=stop]').onclick = () => speechSynthesis.cancel();
     el.querySelector('[data-act=done]').onclick = (ev) => {
-      ev.target.classList.add('hidden');
-      a.paras.forEach(p => p.replace(/\{\{([^}|]+)(?:\|([^}]+))?\}\}/g, (_, s, l) => PTE.learn(l || s)));
-      PTE.set('art:' + a.id, { read: true });
-      quiz(el.querySelector('.quiz'), a);
+      ev.currentTarget.parentElement.remove();
+      a.paras.forEach(p => p.replace(RE, (_, s, l) => PTE.learn(l || s)));
+      el.querySelectorAll('.stepper span')[1].classList.add('on');
+      mcq(el, a, 0, 0); chips();
     };
   });
 
-  function quiz(q, a) {
-    q.classList.remove('hidden');
-    q.innerHTML = '<h3>理解题</h3>' + a.questions.map((x, i) => `<div class="mcq" data-i="${i}" style="margin-bottom:12px"><div><b>${i + 1}.</b> ${PTE.esc(x.q)}</div>${x.options.map((o, j) => `<label style="display:block;padding:4px 0"><input type="radio" name="${a.id}q${i}" value="${j}"> ${PTE.esc(o)}</label>`).join('')}<div class="fb small"></div></div>`).join('') + '<button class="primary" data-act="mcq">提交理解题</button><div class="cloze"></div>';
-    q.querySelector('[data-act=mcq]').onclick = (ev) => {
-      let ok = 0, bad = 0;
-      q.querySelectorAll('.mcq').forEach(d => {
-        const x = a.questions[+d.dataset.i]; const v = d.querySelector('input:checked');
-        const right = v && +v.value === x.a; right ? ok++ : bad++;
-        d.querySelector('.fb').innerHTML = (right ? '<span class="ok">✓ 正确</span>' : `<span class="bad">✗ 答案：${PTE.esc(x.options[x.a])}</span>`) + `<div class="mute">${PTE.esc(x.why)}</div>`;
-      });
-      PTE.updateStats(s => { s.mcq.ok += ok; s.mcq.bad += bad; });
-      ev.target.remove();
-      cloze(q.querySelector('.cloze'), a);
-    };
+  function mcq(el, a, i, score) {
+    const q = el.querySelector('.quiz');
+    if (i >= a.questions.length) { el.querySelectorAll('.stepper span')[2].classList.add('on'); return cloze(el, a, score); }
+    const x = a.questions[i];
+    q.innerHTML = `<div class="fadein"><div class="row" style="margin-top:6px"><span class="chip">${PTE.icon('eye')} 理解题 ${i + 1}/${a.questions.length}</span></div>
+      <p style="font-weight:700;font-size:1.05rem">${PTE.esc(x.q)}</p>${x.options.map((o, j) => `<button class="opt" data-j="${j}">${String.fromCharCode(65 + j)}. ${PTE.esc(o)}</button>`).join('')}<div class="fb"></div></div>`;
+    q.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    q.querySelectorAll('.opt').forEach(b => b.onclick = () => {
+      const j = +b.dataset.j, right = j === x.a;
+      q.querySelectorAll('.opt').forEach(o => o.disabled = true);
+      b.classList.add(right ? 'right' : 'wrong'); q.querySelector(`.opt[data-j="${x.a}"]`).classList.add('right');
+      PTE.updateStats(s => { right ? s.mcq.ok++ : s.mcq.bad++; });
+      q.querySelector('.fb').innerHTML = `<div class="why">${right ? '<b class="ok">答对了！</b> ' : ''}${PTE.esc(x.why)}</div><div class="center" style="margin-top:12px"><button class="pri">${i + 1 < a.questions.length ? '下一题' : '去填空'} ${PTE.icon('arrow')}</button></div>`;
+      q.querySelector('.fb button').onclick = () => mcq(el, a, i + 1, score + (right ? 1 : 0));
+    });
   }
 
-  function cloze(c, a) {
+  function cloze(el, a, mcqScore) {
+    const c = el.querySelector('.quiz');
     const items = [];
     a.paras.forEach(p => p.split(/(?<=[.!?])\s+(?=[A-Z])/).forEach(sent => {
-      const re = /\{\{([^}|]+)(?:\|([^}]+))?\}\}/g; let m; const found = [];
-      while ((m = re.exec(sent))) found.push({ shown: m[1], lemma: m[2] || m[1] });
-      found.forEach(f => items.push({ sent, ...f }));
+      let m; const re = new RegExp(RE.source, 'g');
+      while ((m = re.exec(sent))) items.push({ sent, shown: m[1], lemma: m[2] || m[1] });
     }));
-    c.innerHTML = '<h3>填空题（拼写要完全正确，含词形变化）</h3>' + items.map((it, i) => {
-      const w = wmap[it.lemma.toLowerCase()];
-      const hint = w ? w.t.split('；')[0] : '';
+    c.innerHTML = `<div class="fadein"><div class="row" style="margin:6px 0 12px"><span class="chip">${PTE.icon('pen')} 填空 · ${items.length} 空</span><span class="small mute">首字母已给出，注意词形变化</span></div>` + items.map((it, i) => {
+      const w = wmap[it.lemma.toLowerCase()]; const hint = w ? w.t.split('；')[0] : '';
       let used = false;
-      const html = it.sent.replace(/\{\{([^}|]+)(?:\|([^}]+))?\}\}/g, (_, s, l) => {
-        if (!used && s === it.shown) { used = true; return `${PTE.esc(s[0])}<input class="blank" data-i="${i}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="填空">`; }
-        return PTE.esc(s);
-      });
-      return `<p style="margin:0 0 10px">${i + 1}. ${html} <span class="small mute">（${PTE.esc(hint)}）</span><span class="small ans" data-i="${i}"></span></p>`;
-    }).join('') + '<button class="primary" data-act="check">检查</button>';
+      const html = it.sent.replace(RE, (_, s) => { if (!used && s === it.shown) { used = true; return `${PTE.esc(s[0])}<input class="blank" data-i="${i}" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="填空">`; } return PTE.esc(s); });
+      return `<p style="margin:0 0 14px;line-height:2">${html} <span class="chip">${PTE.esc(hint)}</span><span class="ans" data-i="${i}"></span></p>`;
+    }).join('') + `<div class="center"><button class="pri lg" data-act="check">${PTE.icon('check')} 检查</button></div></div>`;
+    const inputs = [...c.querySelectorAll('.blank')];
+    inputs.forEach((inp, k) => inp.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); (inputs[k + 1] || c.querySelector('[data-act=check]')).focus(); } });
+    inputs[0] && inputs[0].focus({ preventScroll: true });
     c.querySelector('[data-act=check]').onclick = (ev) => {
-      let ok = 0, bad = 0; const wrong = [];
+      let ok = 0; const wrong = [];
       items.forEach((it, i) => {
-        const inp = c.querySelector(`input[data-i="${i}"]`);
-        const val = (it.shown[0] + inp.value.trim()).toLowerCase();
-        const right = val === it.shown.toLowerCase();
-        inp.classList.toggle('r', right); inp.classList.toggle('wr', !right); inp.disabled = true;
-        right ? ok++ : (bad++, wrong.push(it.lemma));
-        c.querySelector(`.ans[data-i="${i}"]`).innerHTML = right ? ' <span class="ok">✓</span>' : ` <span class="bad">→ ${PTE.esc(it.shown)}</span>`;
+        const inp = inputs[i]; const right = (it.shown[0] + inp.value.trim()).toLowerCase() === it.shown.toLowerCase();
+        inp.classList.add(right ? 'r' : 'wr'); inp.disabled = true;
+        right ? ok++ : wrong.push(it.lemma);
+        c.querySelector(`.ans[data-i="${i}"]`).innerHTML = right ? ` <span class="ok">${PTE.icon('check')}</span>` : ` <b class="bad">${PTE.esc(it.shown)}</b>`;
       });
-      PTE.updateStats(s => { s.cloze.ok += ok; s.cloze.bad += bad; wrong.forEach(w => { if (!s.cloze.wrong.includes(w)) s.cloze.wrong.push(w); }); });
-      ev.target.outerHTML = `<p><b>${ok}/${ok + bad}</b> 正确。${bad ? '错的词今晚和明天都会出现在复习里。' : '全对！'}</p>`;
+      PTE.updateStats(s => { s.cloze.ok += ok; s.cloze.bad += wrong.length; wrong.forEach(w => { if (!s.cloze.wrong.includes(w)) s.cloze.wrong.push(w); }); });
+      const pct = ok / items.length;
+      ev.currentTarget.parentElement.outerHTML = `<div class="center pulse-in" style="margin-top:10px"><div class="scorering">${PTE.ring(pct, 96, 9, Math.round(pct * 100) + '%')}</div><b>${pct === 1 ? '满分！' : pct >= .7 ? '不错！' : '再接再厉'}</b><div class="small mute">理解题 ${mcqScore}/${a.questions.length} · 填空 ${ok}/${items.length}${wrong.length ? ' · 错词明天会优先复习' : ''}</div></div>`;
+      c.querySelectorAll('.scorering .fg').forEach(f => f.style.stroke = pct >= .7 ? 'var(--ok)' : 'var(--coral)');
+      PTE.animateRings(c);
+      if (pct >= .8) PTE.confetti();
     };
   }
 
-  const [s0, s1] = day.newWords;
-  document.getElementById('chips').innerHTML = PTE._wlist.slice(s0, s1).map(w => `<button class="icon" data-w="${PTE.esc(w.w)}">${PTE.esc(w.w)}</button>`).join('');
-  document.querySelectorAll('#chips [data-w]').forEach(b => b.onclick = () => PTE.lookup(b.dataset.w));
+  const chips = () => {
+    const srs = PTE.srs();
+    const list = PTE._wlist.slice(day.newWords[0], day.newWords[1]);
+    document.getElementById('chips').innerHTML = list.map(w => `<button class="sm${srs[w.w.toLowerCase()] ? ' known' : ''}" data-w="${PTE.esc(w.w)}">${PTE.esc(w.w)}</button>`).join('');
+    document.getElementById('known').textContent = `已接触 ${list.filter(w => srs[w.w.toLowerCase()]).length} / ${list.length}`;
+    document.querySelectorAll('#chips [data-w]').forEach(b => b.onclick = () => PTE.lookup(b.dataset.w));
+  };
+  chips();
 })().catch(e => document.querySelector('main').insertAdjacentHTML('afterbegin', `<p class="bad">加载失败：${PTE.esc(e.message)}</p>`));
 </script>
 </body>

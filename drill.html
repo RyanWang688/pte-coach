@@ -1,32 +1,36 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>题型训练</title>
-<link rel="stylesheet" href="assets/style.css?v=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>题型训练 · PTE Rise</title>
+<link rel="icon" href="assets/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=3">
 </head>
 <body>
 <main>
-  <h1>题型训练</h1>
-  <div class="tabs" id="tabs"></div>
+  <div class="row"><h1 class="grow">题型训练</h1><button class="round ghost" id="cfg" aria-label="发音设置"></button></div>
+  <div class="seg" id="tabs"></div>
   <div id="pane"></div>
-  <details class="card small"><summary>发音设置</summary>
-    <p class="mute">考试中会听到英、澳、美等多种口音。可以在这里换不同口音练习。</p>
-    <div class="row"><label>口音</label><select id="voice" style="width:auto;max-width:100%"></select></div>
-    <div class="row" style="margin-top:8px"><label>语速</label><input type="range" id="rate" min="0.7" max="1.2" step="0.05" style="width:200px"><span id="rateV"></span></div>
-    <p class="mute" id="srNote"></p>
-  </details>
 </main>
-<script src="assets/core.js?v=1"></script>
-<script src="assets/lookup.js?v=1"></script>
+<script src="assets/core.js?v=3"></script>
+<script src="assets/lookup.js?v=3"></script>
 <script>
 PTE.nav('drill.html');
-const TABS = { wfd: 'WFD 听写', rs: 'RS 复述', ra: 'RA 朗读', write: '写作 SWT/WE' };
+const TABS = { rs: ['RS 复述', 'mic'], wfd: ['WFD 听写', 'head'], ra: ['RA 朗读', 'book'], write: ['写作', 'pen'] };
+const TIPS = {
+  rs: ['听完立刻开口，3 秒不说话麦克风会关', '按意群记忆，不要逐词记', '宁可漏词，也要保持流畅'],
+  wfd: ['考试只播一次，练习可以重听一次', '先写下记住的骨架，再补细节', '注意复数 -s、过去式 -ed 和冠词'],
+  ra: ['流利度和发音比读对每个词更重要', '读错了不要回头重读', '在逗号和意群处自然停顿'],
+};
 let cur = (location.hash || '#rs').slice(1); if (!TABS[cur]) cur = 'rs';
 const shuffle = (a) => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map(x => x[1]);
 const plain = (s) => s.replace(/\{\{([^}|]+)(?:\|[^}]+)?\}\}/g, '$1');
-const diffHTML = (r) => '<div class="diff" style="font-size:1.1rem">' + r.words.map((w, i) => `<span class="${r.marks[i] ? 'm' : 'x'}">${PTE.esc(w)}</span>`).join(' ') + '</div>';
+const diffHTML = (r) => '<div class="diff" style="font-size:1.1rem;line-height:2">' + r.words.map((w, i) => `<span class="${r.marks[i] ? 'm' : 'x'}">${PTE.esc(w)}</span>`).join(' ') + '</div>';
+const $ = (s) => document.querySelector(s);
 let day, wmap, pool, paras;
+document.getElementById('cfg').innerHTML = PTE.icon('gear');
 
 (async () => {
   [day, wmap] = await Promise.all([PTE.currentDay(), PTE.words()]);
@@ -35,48 +39,53 @@ let day, wmap, pool, paras;
   const today = PTE._wlist.slice(day.newWords[0], day.newWords[1]);
   const learned = Object.keys(PTE.srs()).map(k => wmap[k]).filter(Boolean).filter(w => !today.includes(w));
   pool = [...shuffle(today), ...shuffle(learned)].map(w => ({ text: w.e, cn: w.c, word: w.w }));
-  // settings
-  const vs = () => { const sel = document.getElementById('voice'); const list = PTE.voices(); const cv = PTE.pickVoice(); sel.innerHTML = list.map(v => `<option ${cv && v.name === cv.name ? 'selected' : ''}>${PTE.esc(v.name)}</option>`).join('') || '<option>（浏览器没有英文语音）</option>'; sel.onchange = () => PTE.set('voice', sel.value); };
-  vs(); speechSynthesis.addEventListener && speechSynthesis.addEventListener('voiceschanged', vs);
-  const rate = document.getElementById('rate'); rate.value = PTE.get('rate', 0.95); document.getElementById('rateV').textContent = rate.value;
-  rate.oninput = () => { PTE.set('rate', +rate.value); document.getElementById('rateV').textContent = rate.value; };
-  document.getElementById('srNote').textContent = PTE.canRecognize ? '语音识别可用（录音由浏览器发送到识别服务转成文字，网站本身不保存录音）。识别结果只能粗略反映内容和清晰度，不等于 PTE 官方评分。' : '当前浏览器不支持语音识别：RS / RA 改为听完后自己对照原文打分。建议用电脑上的 Chrome 或 Edge。';
   render();
 })();
 
-function tabs() {
-  document.getElementById('tabs').innerHTML = Object.entries(TABS).map(([k, v]) => `<button data-t="${k}" class="${k === cur ? 'on' : ''}">${v}</button>`).join('');
-  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { cur = b.dataset.t; history.replaceState(null, '', '#' + cur); speechSynthesis.cancel(); PTE._stopListen && PTE._stopListen(); render(); });
-}
 PTE.track(() => cur);
-function render() { tabs();({ wfd, rs, ra, write })[cur](document.getElementById('pane')); }
-const counter = (key, goal) => `<span class="pill">今日 ${PTE.stats()[key].length} / ${goal}</span>`;
+function render() {
+  $('#tabs').innerHTML = Object.entries(TABS).map(([k, [v, i]]) => `<button data-t="${k}" class="${k === cur ? 'on' : ''}">${PTE.icon(i)} ${v}</button>`).join('');
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { cur = b.dataset.t; history.replaceState(null, '', '#' + cur); speechSynthesis.cancel(); PTE._stopListen && PTE._stopListen(); render(); });
+  ({ wfd, rs, ra, write })[cur]($('#pane'));
+}
+const dots = (key, goal) => { const n = PTE.stats()[key].length; return `<div class="counter" title="今日 ${n} / ${goal}">${Array.from({ length: goal }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</div><div class="small mute" style="margin-top:-12px">今日 ${n} / ${goal}${n >= goal ? ' · 目标达成 🎉' : ''}</div>`; };
+const tips = (k) => `<span class="tip" data-tips>${PTE.icon('spark')} 技巧</span><div class="hidden why" data-tipbox style="text-align:left;margin-top:10px">${TIPS[k].map(t => '• ' + t).join('<br>')}</div>`;
+const wireTips = (el) => { const t = el.querySelector('[data-tips]'); if (t) t.onclick = () => el.querySelector('[data-tipbox]').classList.toggle('hidden'); };
+const scoreBlock = (r, extra) => { const pct = r.score / r.total; const html = `<div class="pulse-in"><div class="scorering">${PTE.ring(pct, 88, 8, Math.round(pct * 100) + '%')}</div>${diffHTML(r)}${extra || ''}</div>`; return html; };
+const paint = (el, pct) => { el.querySelectorAll('.scorering .fg').forEach(f => f.style.stroke = pct >= .8 ? 'var(--ok)' : pct >= .5 ? 'var(--sun)' : 'var(--coral)'); PTE.animateRings(el); if (pct === 1) PTE.confetti(); };
+const goalCheck = (key, goal) => { if (PTE.stats()[key].length === goal) { PTE.confetti(); PTE.toast('今日目标达成！'); } };
 
 /* ---------- WFD ---------- */
 function wfd(el) {
   let i = PTE.stats().wfd.length % Math.max(pool.length, 1), plays = 0;
   const show = () => {
     const it = pool[i % pool.length]; plays = 0;
-    el.innerHTML = `<div class="card"><div class="row"><b class="grow">Write from Dictation</b>${counter('wfd', day.drills.wfd)}</div>
-      <p class="small mute">考试中只播一次。练习时允许重听 1 次，但建议前 10 句只听一次。把听到的每个词都写下来，大小写和标点不计分。</p>
-      <div class="row"><button class="primary" id="play">▶ 播放</button><span class="small mute" id="pc"></span></div>
-      <textarea id="ans" style="min-height:70px;margin-top:10px" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="输入你听到的句子"></textarea>
-      <div class="row" style="margin-top:8px"><button id="sub">提交</button><button id="next" class="hidden primary">下一句 →</button></div>
-      <div id="fb" style="margin-top:12px"></div></div>`;
-    const play = () => { if (plays >= 2) return; plays++; document.getElementById('pc').textContent = plays === 1 ? '还能重听 1 次' : '不能再听了'; PTE.speak(it.text); };
-    document.getElementById('play').onclick = play;
-    setTimeout(play, 1200);
-    document.getElementById('sub').onclick = () => {
-      const a = document.getElementById('ans').value; const r = PTE.wordScore(it.text, a);
-      PTE.updateStats(s => s.wfd.push({ text: it.text, answer: a.trim(), score: r.score, total: r.total }));
-      document.getElementById('fb').innerHTML = `<p><b class="${r.score === r.total ? 'ok' : 'bad'}">${r.score} / ${r.total}</b></p>${diffHTML(r)}<p class="small mute">${PTE.esc(it.cn)}</p><button class="icon" id="again">🔊 再听原句</button>`;
-      document.getElementById('again').onclick = () => PTE.speak(it.text);
-      PTE.clickable(document.getElementById('fb').querySelector('.diff'));
-      document.getElementById('sub').classList.add('hidden'); document.getElementById('next').classList.remove('hidden');
-      document.getElementById('next').focus();
+    el.innerHTML = `<div class="card stage">${dots('wfd', day.drills.wfd)}
+      <button class="bigbtn" id="play" aria-label="播放">${PTE.icon('play')}</button>
+      <div class="status" id="pc">点击播放</div>
+      <textarea id="ans" style="min-height:80px;margin-top:14px;text-align:center;font-size:1.1rem" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="写下你听到的句子，回车提交"></textarea>
+      <div class="row" style="justify-content:center;margin-top:12px"><button class="pri" id="sub">${PTE.icon('check')} 提交</button><button class="pri hidden" id="next">下一句 ${PTE.icon('arrow')}</button></div>
+      <div id="fb" style="margin-top:16px"></div><div style="margin-top:14px">${tips('wfd')}</div></div>`;
+    wireTips(el);
+    const play = async () => {
+      if (plays >= 2) return; plays++;
+      const b = $('#play'); b.disabled = true; $('#pc').textContent = '播放中…';
+      await PTE.speak(it.text);
+      b.disabled = plays >= 2; $('#pc').textContent = plays === 1 ? '还能重听 1 次' : '不能再听了'; $('#ans').focus();
     };
-    document.getElementById('next').onclick = () => { i++; show(); };
-    document.getElementById('ans').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); document.getElementById('sub').click(); } };
+    $('#play').onclick = play;
+    $('#sub').onclick = () => {
+      const a = $('#ans').value; const r = PTE.wordScore(it.text, a);
+      PTE.updateStats(s => s.wfd.push({ text: it.text, answer: a.trim(), score: r.score, total: r.total }));
+      $('#fb').innerHTML = scoreBlock(r, `<p class="small mute">${PTE.esc(it.cn)}</p><button class="sm" id="again">${PTE.icon('vol')} 再听原句</button>`);
+      paint(el, r.score / r.total);
+      $('#again').onclick = () => PTE.speak(it.text);
+      PTE.clickable($('#fb .diff'));
+      $('#sub').classList.add('hidden'); $('#next').classList.remove('hidden'); $('#next').focus();
+      goalCheck('wfd', day.drills.wfd);
+    };
+    $('#next').onclick = () => { i++; show(); };
+    $('#ans').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!$('#sub').classList.contains('hidden')) $('#sub').click(); else $('#next').click(); } };
   };
   show();
 }
@@ -86,25 +95,27 @@ function rs(el) {
   let i = (PTE.stats().rs.length + 7) % Math.max(pool.length, 1);
   const show = () => {
     const it = pool[i % pool.length];
-    el.innerHTML = `<div class="card"><div class="row"><b class="grow">Repeat Sentence</b>${counter('rs', day.drills.rs)}</div>
-      <p class="small mute">听完立刻复述（考试中有 15 秒作答时间，开头 3 秒内不出声麦克风就会关闭）。按意群记忆，宁可流畅地漏词，也不要卡顿回读。</p>
-      <div class="row"><button class="primary" id="go">▶ 开始</button><span id="st" class="small mute"></span></div>
-      <div id="live" class="mute" style="margin-top:10px;min-height:1.6em"></div><div id="fb"></div></div>`;
-    document.getElementById('go').onclick = async (ev) => {
-      ev.target.disabled = true;
-      const st = document.getElementById('st');
-      st.textContent = '听…'; await PTE.speak(it.text);
+    el.innerHTML = `<div class="card stage">${dots('rs', day.drills.rs)}
+      <button class="bigbtn" id="go" aria-label="开始">${PTE.icon('play')}</button>
+      <div class="status" id="st">点击开始：先听，再复述</div>
+      <div id="live" class="mute" style="min-height:1.6em;margin-top:6px"></div>
+      <div id="fb"></div><div style="margin-top:14px">${tips('rs')}</div></div>`;
+    wireTips(el);
+    $('#go').onclick = async () => {
+      const b = $('#go'); b.disabled = true;
+      $('#st').textContent = '仔细听…'; b.innerHTML = PTE.icon('head');
+      await PTE.speak(it.text);
       if (PTE.canRecognize) {
-        st.innerHTML = '<b class="bad">● 录音中，开始复述</b>（说完停顿 2 秒自动结束）';
-        const said = await PTE.listen(15000, t => document.getElementById('live').textContent = t);
-        st.textContent = '';
+        b.classList.add('rec'); b.innerHTML = PTE.icon('mic'); $('#st').innerHTML = '<span class="bad">录音中，开始复述</span>';
+        const said = await PTE.listen(15000, t => $('#live').textContent = t);
+        b.classList.remove('rec'); b.disabled = false;
         finish(it, said || '');
       } else {
-        st.textContent = '现在复述，说完后点击“对照原文”';
-        document.getElementById('fb').innerHTML = '<button id="rev">对照原文</button>';
-        document.getElementById('rev').onclick = () => {
-          document.getElementById('fb').innerHTML = `<p style="font-size:1.1rem">${PTE.esc(it.text)}</p><p class="small mute">${PTE.esc(it.cn)}</p><p>自评：</p><div class="row">${[[1, '全部'], [0.75, '大部分'], [0.5, '一半'], [0.2, '很少']].map(([v, t]) => `<button data-v="${v}">${t}</button>`).join('')}</div>`;
-          document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { const tot = PTE.tokens(it.text).length; PTE.updateStats(s => s.rs.push({ text: it.text, answer: '(自评)', score: Math.round(+b.dataset.v * tot), total: tot })); i++; show(); });
+        b.innerHTML = PTE.icon('mic'); $('#st').textContent = '现在复述，说完点下面的按钮';
+        $('#fb').innerHTML = `<button class="pri" id="rev">${PTE.icon('eye')} 对照原文</button>`;
+        $('#rev').onclick = () => {
+          $('#fb').innerHTML = `<p style="font-size:1.15rem;font-weight:600">${PTE.esc(it.text)}</p><p class="small mute">${PTE.esc(it.cn)}</p><p class="small">你复述出了多少？</p><div class="choice" style="justify-content:center">${[[1, '全部'], [0.75, '大部分'], [0.5, '一半'], [0.2, '很少']].map(([v, t]) => `<button data-v="${v}">${t}</button>`).join('')}</div>`;
+          document.querySelectorAll('[data-v]').forEach(x => x.onclick = () => { const tot = PTE.tokens(it.text).length; PTE.updateStats(s => s.rs.push({ text: it.text, answer: '(自评)', score: Math.round(+x.dataset.v * tot), total: tot })); goalCheck('rs', day.drills.rs); i++; show(); });
         };
       }
     };
@@ -112,9 +123,13 @@ function rs(el) {
   const finish = (it, said) => {
     const r = PTE.wordScore(it.text, said);
     PTE.updateStats(s => s.rs.push({ text: it.text, answer: said, score: r.score, total: r.total }));
-    document.getElementById('fb').innerHTML = `<p><b>${Math.round(r.score / r.total * 100)}%</b> 的词被识别到</p>${diffHTML(r)}<p class="small mute">${PTE.esc(it.cn)}</p><div class="row"><button class="icon" id="again">🔊 再听</button><button class="primary" id="next">下一句 →</button></div>`;
-    document.getElementById('again').onclick = () => PTE.speak(it.text);
-    document.getElementById('next').onclick = () => { i++; show(); };
+    $('#st').textContent = ''; $('#live').textContent = '';
+    $('#go').innerHTML = PTE.icon('redo'); $('#go').onclick = () => { show(); };
+    $('#fb').innerHTML = scoreBlock(r, `<p class="small mute">${PTE.esc(it.cn)}</p><div class="row" style="justify-content:center"><button class="sm" id="again">${PTE.icon('vol')} 再听</button><button class="pri" id="next">下一句 ${PTE.icon('arrow')}</button></div>`);
+    paint(el, r.score / r.total);
+    $('#again').onclick = () => PTE.speak(it.text);
+    $('#next').onclick = () => { i++; show(); };
+    goalCheck('rs', day.drills.rs);
   };
   show();
 }
@@ -125,35 +140,38 @@ function ra(el) {
   const show = () => {
     clearInterval(timer);
     const it = paras[i % paras.length];
-    el.innerHTML = `<div class="card"><div class="row"><b class="grow">Read Aloud</b>${counter('ra', day.drills.ra)}</div>
-      <p class="small mute">考试中准备 30–40 秒，朗读最多 40 秒。重点是流利度和发音：按意群停顿，语调自然，读错了不要回头重读。</p>
-      <p class="mute small">来自《${PTE.esc(it.title)}》</p>
-      <div class="article" id="txt">${PTE.esc(it.text)}</div>
-      <div class="row"><span class="timer" id="clock">准备 35</span><button id="skip">跳过准备，开始朗读</button><button class="icon" id="demo">🔊 听示范</button><span class="grow"></span><button id="nextp">换一段 →</button></div>
-      <div id="live" class="mute small" style="margin-top:8px"></div><div id="fb"></div></div>`;
+    el.innerHTML = `<div class="card">${dots('ra', day.drills.ra)}
+      <div class="row" style="margin:14px 0 6px"><span class="chip">${PTE.icon('book')} ${PTE.esc(it.title)}</span><span class="grow"></span><button class="sm" id="demo">${PTE.icon('vol')} 示范</button><button class="sm ghost" id="nextp">换一段 ${PTE.icon('arrow')}</button></div>
+      <div class="article" id="txt" style="font-size:1.12rem">${PTE.esc(it.text)}</div>
+      <div class="stage" style="padding:12px 0 0"><div class="timerbig" id="clock">35</div><div class="small mute" id="phase">准备时间</div>
+      <button class="bigbtn" id="skip" style="margin-top:12px" aria-label="开始朗读">${PTE.icon('mic')}</button><div class="small mute" style="margin-top:6px">准备好了就点，开始朗读</div>
+      <div id="live" class="mute small" style="margin-top:8px"></div><div id="fb"></div><div style="margin-top:14px">${tips('ra')}</div></div></div>`;
+    wireTips(el);
     let t = 35;
-    const clock = document.getElementById('clock');
-    timer = setInterval(() => { t--; clock.textContent = '准备 ' + t; if (t <= 0) start(); }, 1000);
-    document.getElementById('skip').onclick = start;
-    document.getElementById('demo').onclick = () => PTE.speak(it.text);
-    document.getElementById('nextp').onclick = () => { i++; show(); };
+    timer = setInterval(() => { t--; $('#clock').textContent = t; if (t <= 0) start(); }, 1000);
+    $('#skip').onclick = start;
+    $('#demo').onclick = () => PTE.speak(it.text);
+    $('#nextp').onclick = () => { i++; show(); };
     let started = false;
     async function start() {
       if (started) return; started = true; clearInterval(timer); speechSynthesis.cancel();
-      document.getElementById('skip').disabled = true;
-      let r = 40; clock.innerHTML = '<span class="bad">● 朗读 40</span>';
-      timer = setInterval(() => { r--; clock.innerHTML = `<span class="bad">● 朗读 ${r}</span>`; if (r <= 0) { clearInterval(timer); PTE._stopListen && PTE._stopListen(); } }, 1000);
+      const b = $('#skip'); b.classList.add('rec'); b.disabled = true; b.nextElementSibling.textContent = '';
+      let r = 40; $('#clock').textContent = r; $('#phase').innerHTML = '<span class="bad">录音中</span>';
+      timer = setInterval(() => { r--; $('#clock').textContent = Math.max(r, 0); if (r <= 0) { clearInterval(timer); PTE._stopListen && PTE._stopListen(); } }, 1000);
       if (!PTE.canRecognize) {
-        document.getElementById('fb').innerHTML = '<p class="small mute">当前浏览器不能识别语音。读完后对照示范，自评流利度：</p><div class="row">' + [[1, '一气呵成'], [0.8, '偶尔卡顿'], [0.5, '多次停顿/回读']].map(([v, t]) => `<button data-v="${v}">${t}</button>`).join('') + '</div>';
-        document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { clearInterval(timer); const tot = PTE.tokens(it.text).length; PTE.updateStats(s => s.ra.push({ text: it.text.slice(0, 40) + '…', answer: '(自评)', score: Math.round(+b.dataset.v * tot), total: tot })); i++; show(); });
+        $('#fb').innerHTML = `<p class="small">读完了吗？给自己的流利度打个分：</p><div class="choice" style="justify-content:center">${[[1, '一气呵成'], [0.8, '偶尔卡顿'], [0.5, '多次停顿']].map(([v, t]) => `<button data-v="${v}">${t}</button>`).join('')}</div>`;
+        document.querySelectorAll('[data-v]').forEach(x => x.onclick = () => { clearInterval(timer); const tot = PTE.tokens(it.text).length; PTE.updateStats(s => s.ra.push({ text: it.text.slice(0, 40) + '…', answer: '(自评)', score: Math.round(+x.dataset.v * tot), total: tot })); goalCheck('ra', day.drills.ra); i++; show(); });
         return;
       }
-      const said = await PTE.listen(40000, x => document.getElementById('live').textContent = x);
-      clearInterval(timer); clock.textContent = '完成';
+      const said = await PTE.listen(40000, x => $('#live').textContent = x);
+      clearInterval(timer); b.classList.remove('rec'); $('#phase').textContent = '完成';
       const res = PTE.wordScore(it.text, said || '');
       PTE.updateStats(s => s.ra.push({ text: it.text.slice(0, 40) + '…', answer: '', score: res.score, total: res.total }));
-      document.getElementById('txt').outerHTML = diffHTML(res);
-      document.getElementById('fb').innerHTML = `<p><b>${Math.round(res.score / res.total * 100)}%</b> 的词被识别到。标红的词：可能读漏了、吞音了，或者发音不清。点“听示范”对比后再读一遍。</p>`;
+      $('#txt').innerHTML = diffHTML(res); $('#live').textContent = '';
+      $('#fb').innerHTML = `<div class="pulse-in"><div class="scorering">${PTE.ring(res.score / res.total, 88, 8, Math.round(res.score / res.total * 100) + '%')}</div><p class="small mute">红色的词没被识别出来：可能读漏了、吞音了或发音不清。先听示范，再重读一遍。</p><div class="row" style="justify-content:center"><button id="again">${PTE.icon('redo')} 再读一遍</button><button class="pri" id="nx">下一段 ${PTE.icon('arrow')}</button></div></div>`;
+      paint(el, res.score / res.total);
+      $('#again').onclick = () => show(); $('#nx').onclick = () => { i++; show(); };
+      goalCheck('ra', day.drills.ra);
     }
   };
   show();
@@ -162,27 +180,46 @@ function ra(el) {
 /* ---------- Writing ---------- */
 function write(el) {
   const W = day.writing;
-  el.innerHTML = Object.entries(W).map(([k, w]) => `<div class="card" data-k="${k}"><div class="row"><b class="grow">${PTE.esc(w.title)}</b><span class="timer" data-clock>${w.mins}:00</span></div>
-    <p>${PTE.esc(w.prompt)}</p>
-    <div class="row"><button class="primary" data-start>开始计时</button><span class="small mute" data-wc>0 词</span><a class="small" href="guide.html#${k === 'swt' ? 'swt' : 'we'}">看模板 →</a></div>
-    <textarea data-txt spellcheck="false" style="min-height:${k === 'we' ? 280 : 110}px;margin-top:8px" placeholder="考试界面没有拼写检查，这里也关闭了"></textarea>
-    <div class="row" style="margin-top:8px"><button data-save>提交（附在今日汇报里给教练批改）</button></div><div data-fb class="small" style="margin-top:8px"></div></div>`).join('');
+  el.innerHTML = Object.entries(W).map(([k, w]) => `<div class="card" data-k="${k}">
+    <div class="row"><span class="chip" style="background:${k === 'we' ? '#FFE9E2' : '#EFEAFF'};color:${k === 'we' ? '#D9542F' : '#6C5CFF'}">${PTE.icon('pen')} ${k.toUpperCase()}</span><b class="grow">${PTE.esc(w.title.replace(/^[A-Z]+：/, ''))}</b><span class="timerbig" style="font-size:1.5rem" data-clock>${w.mins}:00</span></div>
+    <p style="background:var(--bg);border-radius:14px;padding:12px 14px;margin:12px 0">${PTE.esc(w.prompt)}</p>
+    <textarea data-txt spellcheck="false" style="min-height:${k === 'we' ? 280 : 110}px" placeholder="点击“开始计时”后作答（考试界面没有拼写检查）"></textarea>
+    <div class="row" style="margin-top:10px"><button class="pri" data-start>${PTE.icon('clock')} 开始计时</button><span class="chip" data-wc>0 词</span><span class="grow"></span><a class="btn sm ghost" href="guide.html#tpl">模板</a><button data-save>${PTE.icon('check')} 提交</button></div>
+    <div data-fb style="margin-top:10px"></div></div>`).join('');
   el.querySelectorAll('[data-k]').forEach(card => {
     const w = W[card.dataset.k]; const ta = card.querySelector('[data-txt]'); let left = w.mins * 60, tm, t0;
     const wc = () => (ta.value.match(/[A-Za-z0-9'’-]+/g) || []).length;
-    ta.oninput = () => card.querySelector('[data-wc]').textContent = wc() + ' 词';
-    card.querySelector('[data-start]').onclick = (ev) => { ev.target.disabled = true; t0 = Date.now(); ta.focus(); tm = setInterval(() => { left--; card.querySelector('[data-clock]').textContent = `${Math.floor(Math.max(left, 0) / 60)}:${String(Math.max(left, 0) % 60).padStart(2, '0')}`; if (left === 0) PTE.toast('时间到'); }, 1000); };
+    const range = card.dataset.k === 'swt' ? [5, 75] : [200, 300];
+    ta.oninput = () => { const n = wc(); const c = card.querySelector('[data-wc]'); c.textContent = n + ' 词'; c.style.background = n >= range[0] && n <= range[1] ? 'var(--okbg)' : ''; c.style.color = n >= range[0] && n <= range[1] ? 'var(--ok)' : ''; };
+    card.querySelector('[data-start]').onclick = (ev) => { ev.currentTarget.disabled = true; t0 = Date.now(); ta.focus(); tm = setInterval(() => { left--; const v = Math.max(left, 0); const c = card.querySelector('[data-clock]'); c.textContent = `${Math.floor(v / 60)}:${String(v % 60).padStart(2, '0')}`; c.style.color = v < 60 ? 'var(--bad)' : ''; if (left === 0) PTE.toast('时间到'); }, 1000); };
     card.querySelector('[data-save]').onclick = () => {
       clearInterval(tm); const n = wc(); const mins = t0 ? Math.round((Date.now() - t0) / 60000) : 0;
       const type = card.dataset.k.toUpperCase();
       PTE.updateStats(s => { s.writing = s.writing.filter(x => x.type !== type); s.writing.push({ type, words: n, mins, text: ta.value.trim() }); });
       const checks = type === 'SWT'
-        ? [[n >= 5 && n <= 75, `字数 5–75（现在 ${n}）`], [(ta.value.trim().match(/[.!?](\s|$)/g) || []).length === 1, '只有一个句子（只有一个句号）'], [/\b(and|while|which|whereas|although)\b/i.test(ta.value), '用了连接词把要点串起来']]
-        : [[n >= 200 && n <= 300, `字数 200–300（现在 ${n}）`], [(ta.value.match(/\n\s*\n|\n/g) || []).length >= 3, '至少 4 段（开头 / 两段主体 / 结尾）'], [/\b(however|moreover|therefore|for example|in conclusion)\b/i.test(ta.value), '用了连接词（however / for example / in conclusion）']];
-      card.querySelector('[data-fb]').innerHTML = checks.map(([ok, t]) => `<div class="${ok ? 'ok' : 'bad'}">${ok ? '✓' : '✗'} ${t}</div>`).join('') + '<div class="mute">已保存。生成今日汇报时会附上全文，教练会批改。</div>';
+        ? [[n >= 5 && n <= 75, `5–75 词（${n}）`], [(ta.value.trim().match(/[.!?](\s|$)/g) || []).length === 1, '只有一个句子'], [/\b(and|while|which|whereas|although)\b/i.test(ta.value), '有连接词']]
+        : [[n >= 200 && n <= 300, `200–300 词（${n}）`], [(ta.value.match(/\n/g) || []).length >= 3, '至少 4 段'], [/\b(however|moreover|therefore|for example|in conclusion)\b/i.test(ta.value), '有过渡词']];
+      card.querySelector('[data-fb]').innerHTML = '<div class="row">' + checks.map(([ok, t]) => `<span class="chip" style="background:${ok ? 'var(--okbg)' : 'var(--badbg)'};color:${ok ? 'var(--ok)' : 'var(--bad)'}">${PTE.icon(ok ? 'check' : 'x')} ${t}</span>`).join('') + '</div><p class="small mute">已保存，生成汇报时会附上全文，由教练批改。</p>';
+      if (checks.every(c => c[0])) PTE.confetti();
     };
   });
 }
+
+/* ---------- voice settings ---------- */
+document.getElementById('cfg').onclick = () => {
+  const list = PTE.voices(); const cv = PTE.pickVoice();
+  const sh = PTE.sheet(`<h2 style="margin-top:0">发音设置</h2>
+    <div class="small mute">口音（考试会有英、澳、美等多种口音，可以换着练）</div>
+    <select id="voice" style="margin:6px 0 14px">${list.map(v => `<option ${cv && v.name === cv.name ? 'selected' : ''}>${PTE.esc(v.name)}</option>`).join('') || '<option>（没有英文语音）</option>'}</select>
+    <div class="small mute">语速 <b id="rv"></b></div><input type="range" id="rate" min="0.7" max="1.2" step="0.05" style="width:100%">
+    <button class="sm" id="test" style="margin-top:10px">${PTE.icon('vol')} 试听</button>
+    <p class="small mute" style="margin-top:14px">${PTE.canRecognize ? '语音识别可用：录音由浏览器发到它的识别服务转成文字，本网站不保存录音。识别结果只能粗略反映内容和清晰度，不等于官方评分。' : '当前浏览器不支持语音识别，RS / RA 会改成自评。建议用电脑上的 Chrome 或 Edge。'}</p>`);
+  const sel = sh.querySelector('#voice'), rate = sh.querySelector('#rate'), rv = sh.querySelector('#rv');
+  rate.value = PTE.get('rate', 0.95); rv.textContent = rate.value;
+  sel.onchange = () => PTE.set('voice', sel.value);
+  rate.oninput = () => { PTE.set('rate', +rate.value); rv.textContent = rate.value; };
+  sh.querySelector('#test').onclick = () => PTE.speak('Practice makes perfect. Let us get started.');
+};
 </script>
 </body>
 </html>

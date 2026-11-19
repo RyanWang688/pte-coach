@@ -1,22 +1,27 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>教练复盘</title>
-<link rel="stylesheet" href="assets/style.css?v=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>教练复盘 · PTE Rise</title>
+<link rel="icon" href="assets/logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css?v=3">
 </head>
 <body>
 <main>
   <h1>教练复盘</h1>
-  <p class="small mute">你每天发汇报后，教练会在这里写总结和调整，同时更新第二天的任务。</p>
-  <div id="list"></div>
+  <p class="small mute" style="margin:6px 0 18px">你每交一次作业，教练就在这里写一条复盘</p>
+  <div class="tl" id="list"></div>
 </main>
-<script src="assets/core.js?v=1"></script>
+<script src="assets/core.js?v=3"></script>
 <script>
 PTE.nav('log.html');
+const F = [['summary', '总结', 'chat', '#6C5CFF'], ['scores', '数据', 'chart', '#3BA9FF'], ['plan', '调整', 'redo', '#21C38E'], ['todo', '需要你做', 'flag', '#FF7A59']];
 PTE.load('data/log.json').then(list => {
-  document.getElementById('list').innerHTML = list.slice().reverse().map(e => `<div class="card"><div class="row"><b class="grow">${e.day ? 'Day ' + e.day + ' · ' : ''}${PTE.esc(e.title)}</b><span class="small mute">${PTE.esc(e.date)}</span></div>
-    ${['summary:总结', 'scores:数据', 'plan:调整', 'todo:需要你做'].map(x => { const [k, t] = x.split(':'); return e[k] ? `<p><b>${t}：</b>${PTE.esc(e[k])}</p>` : ''; }).join('')}</div>`).join('');
+  document.getElementById('list').innerHTML = list.slice().reverse().map((e, i) => `<div class="card fadein" style="animation-delay:${i * 60}ms"><span class="dot"></span>
+    <div class="row"><span class="chip" style="background:var(--grad);color:#fff">${e.day ? 'Day ' + e.day : '开营'}</span><b class="grow">${PTE.esc(e.title)}</b><span class="small mute">${PTE.esc(e.date)}</span></div>
+    ${F.map(([k, t, ic, c]) => e[k] ? `<div class="row" style="align-items:flex-start;margin-top:12px;flex-wrap:nowrap"><span style="color:${c};margin-top:2px">${PTE.icon(ic)}</span><div><b class="small">${t}</b><div>${PTE.esc(e[k])}</div></div></div>` : '').join('')}</div>`).join('');
 });
 </script>
 </body>
