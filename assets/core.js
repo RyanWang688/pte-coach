@@ -130,7 +130,44 @@
     const want = PTE.get('voice', '');
     return voices.find(v => v.name === want) || PTE.voices()[0];
   };
-  PTE.speak = (text, opts = {}) => new Promise(res => {
+  /* AI voice (Kokoro-82M, pre-generated mp3) — preferred whenever the text has audio */
+  PTE.sentences = (t) => t.split(/(?<=[.!?]["”]?)\s+(?=["“]?[A-Z])/);
+  const norm = (s) => s.replace(/\{\{([^}|]+)(?:\|[^}]+)?\}\}/g, '$1').replace(/\s+/g, ' ').trim();
+  let aiMap = null, curAudio = null, playTok = 0;
+  const aiLoad = fetch('data/audio.json?t=' + Math.floor(Date.now() / 6e5)).then(r => r.ok ? r.json() : { map: {} }).then(j => { aiMap = j.map || {}; PTE.aiVoice = j.voice; }).catch(() => { aiMap = {}; });
+  PTE.aiReady = aiLoad;
+  PTE.useAI = () => PTE.get('ai', 1) === 1;
+  PTE.aiAudio = (text) => {
+    if (!aiMap) return null; const k = norm(text);
+    if (aiMap[k]) return [aiMap[k]];
+    const parts = PTE.sentences(k).map(norm);
+    return parts.length > 1 && parts.every(p => aiMap[p]) ? parts.map(p => aiMap[p]) : null;
+  };
+  const stopAudio = () => { playTok++; if (curAudio) { curAudio.pause(); curAudio = null; } };
+  if ('speechSynthesis' in window) { const oc = speechSynthesis.cancel.bind(speechSynthesis); try { speechSynthesis.cancel = () => { stopAudio(); oc(); }; } catch (e) {} }
+  addEventListener('pagehide', stopAudio);
+  const playUrl = (url, rate) => new Promise(res => {
+    const a = new Audio(url); a.preservesPitch = true; a.playbackRate = rate; curAudio = a;
+    a.onended = () => res(true); a.onerror = () => res(false);
+    a.play().catch(() => res(false));
+  });
+  PTE.speak = async (text, opts = {}) => {
+    if (aiMap === null) await Promise.race([aiLoad, new Promise(r => setTimeout(r, 1500))]);
+    const urls = PTE.useAI() && PTE.aiAudio(text);
+    if (urls) {
+      if ('speechSynthesis' in window) speechSynthesis.cancel(); else stopAudio();
+      const tok = playTok;
+      for (let j = 0; j < urls.length; j++) {
+        const ok = await playUrl(urls[j], opts.rate || 1);
+        if (tok !== playTok) return;
+        if (!ok && j === 0) return PTE.speakTTS(text, opts);
+        if (j < urls.length - 1) await new Promise(r => setTimeout(r, 220));
+      }
+      return;
+    }
+    return PTE.speakTTS(text, opts);
+  };
+  PTE.speakTTS = (text, opts = {}) => new Promise(res => {
     if (!('speechSynthesis' in window)) return res();
     speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
@@ -262,17 +299,22 @@
       isAndroid ? '安卓上可以在 设置 → 文字转语音 中选择 Google 语音引擎，并下载高质量英语语音。' :
       isEdge ? '没有找到 Natural 语音，请确认联网后刷新页面。' : '电脑上用 <b>Microsoft Edge</b> 打开本网站，会有 Natasha、Sonia、William 等非常自然的 Natural 人声，电子感最轻。';
     const sh = PTE.sheet(`<h2 style="margin-top:0">发音设置</h2>
-      <div class="note small" style="background:var(--bg);border-radius:14px;padding:10px 12px;margin-bottom:12px">${tip}</div>
-      <div class="small mute">声音（考试会有英、澳、美等多种口音，可以换着练）</div>
+      <label class="row" style="background:var(--grad);color:#fff;border-radius:16px;padding:12px 14px;margin-bottom:12px;cursor:pointer;flex-wrap:nowrap">
+        <span>${PTE.icon('spark')}</span><span class="grow"><b>AI 自然人声</b><span class="small" style="display:block;opacity:.85">Kokoro 神经网络语音（英音 Emma），用于文章、词表单词和例句</span></span>
+        <input type="checkbox" id="ai" ${PTE.useAI() ? 'checked' : ''} style="width:22px;height:22px;flex:none"></label>
+      <div class="small mute">没有 AI 音频的内容（比如词表外的生词）会用下面的浏览器声音</div>
+      <div class="note small" style="background:var(--bg);border-radius:14px;padding:10px 12px;margin:8px 0 12px">${tip}</div>
+      <div class="small mute">浏览器声音</div>
       <select id="voice" style="margin:6px 0 14px">${list.map(v => `<option value="${PTE.esc(v.name)}" ${cv && v.name === cv.name ? 'selected' : ''}>${PTE.natural(v) ? '★ ' : ''}${PTE.esc(v.name.replace(/^Microsoft /, ''))}</option>`).join('') || '<option>（没有英文语音）</option>'}</select>
       <div class="small mute">单词/句子语速 <b id="rv"></b></div><input type="range" id="rate" min="0.7" max="1.2" step="0.05" style="width:100%">
       <button class="sm" id="test" style="margin-top:10px">${PTE.icon('vol')} 试听</button>
       ${note ? `<p class="small mute" style="margin-top:14px">${note}</p>` : ''}`);
     const sel = sh.querySelector('#voice'), rate = sh.querySelector('#rate'), rv = sh.querySelector('#rv');
     const cur = PTE.get('rate', cv && PTE.natural(cv) ? 1 : 0.95); rate.value = cur; rv.textContent = cur;
-    sel.onchange = () => { PTE.set('voice', sel.value); PTE.speak('Hello! This is how I sound.'); };
+    sel.onchange = () => { PTE.set('voice', sel.value); PTE.speakTTS('Hello! This is how I sound.'); };
+    sh.querySelector('#ai').onchange = (e) => { PTE.set('ai', e.target.checked ? 1 : 0); PTE.toast(e.target.checked ? '已开启 AI 自然人声' : '已改用浏览器声音'); };
     rate.oninput = () => { PTE.set('rate', +rate.value); rv.textContent = rate.value; };
-    sh.querySelector('#test').onclick = () => PTE.speak('Researchers have found that regular exercise can significantly improve memory, especially in older adults.');
+    sh.querySelector('#test').onclick = () => PTE.speak(PTE._wlist && PTE._wlist[0] ? PTE._wlist[0].e : 'Researchers analysed data from over two thousand students.');
   };
   PTE.sheet = (html) => {
     const s = document.createElement('div'); s.className = 'scrim';
