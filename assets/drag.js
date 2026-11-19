@@ -20,8 +20,9 @@
   PTE.updateDock();
 
   // first-time hint
-  if (!PTE.get('dragHint', 0) && document.querySelector('.article, .diff')) {
+  if (!PTE.get('dragHint', 0)) {
     setTimeout(() => {
+      if (!document.querySelector('.article, .diff')) return;
       const h = document.createElement('div'); h.className = 'coachmark';
       h.innerHTML = `<b>${PTE.icon('spark')} 小技巧</b><br>遇到生词，<b>拖动</b>它（手机上<b>长按</b>再拖）到这里，就能收进生词本，之后按记忆曲线换着题型考你。<br><button class="sm pri" style="margin-top:8px">知道了</button>`;
       document.body.appendChild(h); h.querySelector('button').onclick = () => { h.remove(); PTE.set('dragHint', 1); };
